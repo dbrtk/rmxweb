@@ -1,10 +1,16 @@
-from django.urls import path
+
+
+from django.urls import include, path
+from rest_framework import routers
 
 from . import views
 
+
+router = routers.DefaultRouter()
+
+router.register(r'', views.ContainerViewSet)
+
+
 urlpatterns = [
-    # path('articles/2003/', views.special_case_2003),
-    # path('articles/<int:year>/', views.year_archive),
-    # path('articles/<int:year>/<int:month>/', views.month_archive),
-    # path('articles/<int:year>/<int:month>/<slug:slug>/', views.article_detail),
+    path('', include(router.urls)),
 ]

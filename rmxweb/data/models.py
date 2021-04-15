@@ -3,7 +3,7 @@
 from django.core.validators import URLValidator
 from django.db import models
 
-from ..container.models import Container
+from container.models import Container
 
 
 class Data(models.Model):

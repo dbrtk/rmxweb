@@ -1,3 +1,9 @@
 django
-djangorestframework
 graphene-django
+
+djangorestframework
+markdown
+django-filter
+
+celery
+
