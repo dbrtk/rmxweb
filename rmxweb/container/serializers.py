@@ -6,9 +6,6 @@ from . import models
 
 class ContainerSerializer(serializers.HyperlinkedModelSerializer):
 
-    created = serializers.DateTimeField()
-    updated = serializers.DateTimeField()
-
     class Meta:
         model = models.Container
         fields = ['name', 'crawl_ready', 'integrity_check_in_progress']

@@ -1,16 +1,18 @@
 
 
-from django.urls import include, path
-from rest_framework import routers
+from django.urls import path
 
 from . import views
 
-
-router = routers.DefaultRouter()
-
-router.register(r'', views.ContainerViewSet)
-
-
 urlpatterns = [
-    path('', include(router.urls)),
+    path('', views.ContainerList.as_view()),
+    path('<int:pk>/', views.ContainerRecord.as_view()),
+
+    # todo(): delete these (4 urls that follow):
+    # path('url/', views.Urls.as_view()),
+    # path('url/<int:pk>/', views.UrlRecord.as_view()),
+    #
+    # path('crawl-status/', views.CrawlStatus.as_view()),
+    # path('crawl-status/<int:pk>/', views.CrawlStatusRecord.as_view()),
+
 ]
