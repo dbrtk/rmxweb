@@ -1,11 +1,11 @@
 
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 
 from .models import Container
 from .serializers import ContainerSerializer
-
-from django.conf import settings
+from rmxweb.celery import celery
+from rmxweb import config
 
 
 class ContainerList(APIView):
@@ -40,7 +40,7 @@ class ContainerList(APIView):
                 'endpoint': endpoint,
                 'crawl': crawl,
             },
-            'rpc_queues': settings.RPC_PUBLISH_QUEUES,
+            'rpc_queues': config.RPC_PUBLISH_QUEUES,
             'post': request.data
         })
 
@@ -73,6 +73,10 @@ class ContainerRecord(APIView):
 
         pass
 
+
+def test_celery(request, a, b):
+
+    return celery.send_task(config.RMXWEB_TASKS.get('test_task'), (a, b)).get()
 
 # todo(): delete these views
 # class Urls(APIView):

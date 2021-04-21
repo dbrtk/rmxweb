@@ -6,10 +6,10 @@ import stat
 import uuid
 
 from django.db import models
-from django.conf import settings
 
 from .errors import DuplicateUrlError
-from rmxweb.container.models import Container
+from container.models import Container
+from rmxweb import config
 
 
 class Data(models.Model):
@@ -28,6 +28,9 @@ class Data(models.Model):
     title = models.TextField()
     hash_text = models.CharField(max_length=50)
 
+    # todo(): review the link field.
+    # links = UrlListField()
+
     # file_name = models.CharField(max_length=300)
     # text_url = models.TextField()
     # checked = models.BooleanField(default=False)
@@ -36,7 +39,7 @@ class Data(models.Model):
     def create(
             cls,
             data: (str, list,) = None,
-            container_id: int = None,
+            containerid: int = None,
             links: list = None,
             title: str = None,
             endpoint: str = None):
@@ -44,17 +47,17 @@ class Data(models.Model):
         Create and save a Data object with all the urls that make it.
 
         :param data:
-        :param container_id:
+        :param containerid:
         :param links:
         :param title:
         :param endpoint:
         :return:
         """
-        container_obj = Container.objects.get(pk=container_id)
+        container_obj = Container.objects.get(pk=containerid)
         if not container_obj:
-            raise RuntimeError(container_id)
+            raise RuntimeError(containerid)
 
-        container_files_path = container_path(container_id)
+        container_files_path = container_path(containerid)
         obj = cls(title=title, contianer=container_obj)
         _pk = obj.save()
 
@@ -63,7 +66,7 @@ class Data(models.Model):
         for item in links:
             _ = Link(url=item, data=obj).save()
         try:
-            file_id, hashtext = obj.write_data_to_file(
+            file_id, hash_text = obj.write_data_to_file(
                 path=container_files_path,
                 file_id=obj.file_identifier(),
                 data=data
@@ -72,7 +75,7 @@ class Data(models.Model):
             return None
         else:
             obj.file_id = file_id
-            obj.hash_text = hashtext
+            obj.hash_text = hash_text
         obj.save()
         return obj
 
@@ -100,9 +103,13 @@ class Data(models.Model):
         """Generating a unique id for the file name."""
         return uuid.uuid4().hex
 
+    def get_all_links(self):
+        """Returns all the links for a given container id."""
+        return self.link_set.all()
+
 
 class Link(models.Model):
-
+    """ Model for every link that appears in a web page (Data model). """
     created = models.DateTimeField(auto_now_add=True)
     url = models.URLField(max_length=500)
     data = models.ForeignKey(Data, on_delete=models.CASCADE)
@@ -124,7 +131,7 @@ def container_path(container_id: str = None):
     """ Returns the path for the files in the container. """
     path = os.path.abspath(os.path.normpath(
         os.path.join(
-            settings.CONTAINER_ROOT, container_id, settings.TEXT_FOLDER)
+            config.CONTAINER_ROOT, container_id, config.TEXT_FOLDER)
         )
     )
     if os.path.isdir(path):

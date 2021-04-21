@@ -1,8 +1,12 @@
 """ Models for the container that holds data related to specific crawls.
 """
 
-from django.core.validators import URLValidator
+import os
+import uuid
+
 from django.db import models
+
+from rmxweb import config
 
 
 class Container(models.Model):
@@ -12,51 +16,96 @@ class Container(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     crawl_ready = models.BooleanField(default=False)
+    container_ready = models.BooleanField(default=False)
     integrity_check_in_progress = models.BooleanField(default=False)
 
+    uid = models.UUIDField(default=uuid.uuid4)
 
-class Url(models.Model):
+    @classmethod
+    def get_object(cls, pk):
+        """Retrieves an object for a given pk (container id)."""
+        obj = cls.objects.get(pk=pk)
+        if not obj:
+            raise
+        return obj
 
-    url = models.TextField(validators=[URLValidator])
-    created = models.DateTimeField(auto_now_add=True)
-    container = models.ForeignKey(Container, on_delete=models.CASCADE)
+    @classmethod
+    def inst_by_id(cls, pk: int = None): return cls.get_object(pk)
 
+    @classmethod
+    def set_crawl_ready(cls, containerid, value: bool = None):
+        """ Set the value of crawl_ready on the container. """
+        if not isinstance(value, bool):
+            raise RuntimeError(value)
+        obj = cls.get_object(containerid)
+        obj.crawl_ready = value
+        return obj.save()
 
-class DataObject(models.Model):
-    """
-    structure = {
-        'data_id': str,
-        'file_id': str,  # this is a string representation of a uuid
+    @classmethod
+    def set_integrity_check_in_progress(cls, containerid, value: bool = None):
+        """ Set the value of crawl_ready on the container. """
+        if not isinstance(value, bool):
+            raise RuntimeError(value)
+        obj = cls.get_object(containerid)
+        obj.integrity_check_in_progress = value
+        obj.save()
+        return obj
 
-        # todo(): delete
-        'file_path': str,
+    @classmethod
+    def integrity_check_ready(cls, containerid):
+        """Called when a crawl and the integrity check succeed."""
+        obj = cls.get_object(containerid)
+        obj.integrity_check_in_progress = False
+        obj.crawl_ready = True
+        obj.container_ready = True
+        return obj.save()
 
-        'texthash': str,
-        'file_hash': str,
+    def container_status(self):
+        """Retrieves status related data for a container id."""
+        return {
+            'crawl_ready': self.crawl_ready,
+            'integrity_check_in_progress': self.integrity_check_in_progress,
+            'corpus_ready': self.container_ready,
+        }
 
-        'title': str,
-        'file_name': str,
+    def get_dataids(self):
+        """Returns the data ids"""
+        return [_.pk for _ in self.data_set.all()]
 
-        'url': str,
-        'text_url': str,
+    # path and data related methods
+    def get_folder_path(self):
+        """ Returns the path to the container directory. """
+        return os.path.abspath(os.path.normpath(
+            os.path.join(
+                config.CONTAINER_ROOT, self.uid
+            )
+        ))
 
-        'checked': bool,
-    }
-    """
+    def get_vectors_path(self):
+        """ Returns the path of the file that contains the vectors. """
+        return os.path.join(self.matrix_path, 'vectors.npy')
 
-    # todo(): review and delete this model! It replicates the data object.
+    @property
+    def matrix_path(self):
+        return os.path.join(self.get_folder_path(), config.MATRIX_FOLDER)
 
-    container = models.ForeignKey(Container, on_delete=models.CASCADE)
+    @property
+    def matrix_exists(self):
+        """Returns True is the matix directory with its files exists."""
+        return os.path.exists(self.matrix_path) and os.listdir(
+            self.matrix_path)
 
-    data_id = models.IntegerField()
-    file_id = models.CharField(max_length=100)
-    file_path = models.CharField(max_length=300)
-    title = models.TextField()
-    file_name = models.CharField(max_length=300)
+    @property
+    def wf_path(self): return os.path.join(self.matrix_path, 'wf')
 
-    url = models.TextField(validators=[URLValidator])
-    text_url = models.TextField()
-    checked = models.BooleanField(default=False)
+    def get_lemma_path(self):
+        """Returns the path to the json file that contains the mapping between
+           lemma and words, as these appear in texts.
+        """
+        path = os.path.join(self.matrix_path, 'lemma.json')
+        if not os.path.isfile(path):
+            raise RuntimeError(path)
+        return path
 
 
 class CrawlStatus(models.Model):
@@ -67,57 +116,6 @@ class CrawlStatus(models.Model):
     task_name = models.CharField(max_length=100)
     task_id = models.CharField(max_length=100)
     container = models.ForeignKey(Container, on_delete=models.CASCADE)
-
-
-def insert_urlobj(containerid: int = None, url_obj: dict = None):
-    """ Validating the url object and inserting it in the container list of urls.
-    """
-    DataObject.simple_validation(url_obj)
-
-    containerid = bson.ObjectId(containerid)
-    _COLLECTION.update_one(
-        {'_id': containerid},
-        {'$push': {'urls': url_obj}}
-    )
-    return containerid
-
-
-def set_crawl_ready(containerid, value):
-    """ Set the value of crawl_ready on the container. """
-    _id = bson.ObjectId(containerid)
-    if not isinstance(value, bool):
-        raise RuntimeError(value)
-    return _COLLECTION.update({'_id': _id}, {'$set': {'crawl_ready': value}})
-
-
-def set_integrity_check_in_progress(containerid, value):
-    """ Set the value of crawl_ready on the container. """
-    _id = bson.ObjectId(containerid)
-    if not isinstance(value, bool):
-        raise RuntimeError(value)
-    return _COLLECTION.update({'_id': _id}, {
-        '$set': {'integrity_check_in_progress': value}})
-
-
-def integrity_check_ready(containerid):
-    """Called when a crawl and the integrity check succeed."""
-    return _COLLECTION.update({'_id': bson.ObjectId(containerid)}, {
-        '$set': {
-            'integrity_check_in_progress': False,
-            'crawl_ready': True,
-            'corpus_ready': True
-        }})
-
-
-def container_status(containerid):
-    """Retrieves status related data for a container id."""
-    return _COLLECTION.find_one({'_id': bson.ObjectId(containerid)}, {
-        'crawl_ready': 1,
-        'integrity_check_in_progress': 1,
-        'corpus_ready': 1,
-        'data_from_files': 1,
-        'data_from_the_web': 1,
-    })
 
 
 def request_availability(containerid, reqobj: dict, container=None):
@@ -137,9 +135,7 @@ def request_availability(containerid, reqobj: dict, container=None):
         if not isinstance(v, structure.get(k)):
             raise ValueError(reqobj)
 
-    container = container or ContainerModel.inst_by_id(containerid)
-
+    container = container or Container.objects.get(pk=containerid)
     availability = container.features_availability(
         feature_number=reqobj['features'])
-
     return availability

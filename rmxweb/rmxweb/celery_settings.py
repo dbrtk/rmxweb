@@ -10,7 +10,7 @@ RPC_VHOST = os.environ.get('RABBITMQ_DEFAULT_VHOST')
 RPC_HOST = os.environ.get('RABBITMQ_HOST')
 RPC_PORT = os.environ.get('RABBITMQ_PORT', 5672)
 
-RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxbot')
+RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
 
 # REDIS CONFIG
 # celery, redis (auth access) configuration. Reids is being used as a result
@@ -31,7 +31,7 @@ result_backend = f'redis://:{REDIS_PASS}@{BROKER_HOST_NAME}:{REDIS_PORT}/{REDIS_
 
 result_persistent = True
 
-imports = ('rmxbot.tasks.container', 'rmxbot.tasks.data')
+imports = ('container.tasks', 'data.tasks')
 
 result_expires = 30
 timezone = 'UTC'
@@ -42,7 +42,7 @@ result_serializer = 'json'
 
 task_routes = {
 
-    'rmxbot.tasks.*': {'queue': 'rmxbot'},
+    'rmxweb.tasks.*': {'queue': 'rmxweb'},
 
     'scrasync.*': {'queue': 'scrasync'},
 
@@ -54,43 +54,43 @@ task_routes = {
 
 }
 
-RMXBOT_TASKS = {
+RMXWEB_TASKS = {
 
-    'delete_data': 'rmxbot.tasks.data.delete_data',
+    'delete_data': 'data.tasks.delete_data',
 
-    'create_from_webpage': 'rmxbot.tasks.data.create_from_webpage',
+    'create_from_webpage': 'data.tasks.create_from_webpage',
 
-    'create': 'rmxbot.tasks.data.create',
+    'create': 'data.tasks.create',
 
 
-    'test_task': 'rmxbot.tasks.container.test_task',
+    'test_task': 'container.tasks.test_task',
 
     'generate_matrices_remote':
-        'rmxbot.tasks.container.generate_matrices_remote',
+        'container.tasks.generate_matrices_remote',
 
-    'crawl_async': 'rmxbot.tasks.container.crawl_async',
+    'crawl_async': 'container.tasks.crawl_async',
 
-    'nlp_callback_success': 'rmxbot.tasks.container.nlp_callback_success',
+    'nlp_callback_success': 'container.tasks.nlp_callback_success',
 
-    'file_extract_callback': 'rmxbot.tasks.container.file_extract_callback',
+    'file_extract_callback': 'container.tasks.file_extract_callback',
 
-    'integrity_check': 'rmxbot.tasks.container.integrity_check',
+    'integrity_check': 'container.tasks.integrity_check',
 
     'integrity_check_callback':
-        'rmxbot.tasks.container.integrity_check_callback',
+        'container.tasks.integrity_check_callback',
 
     'delete_data_from_container':
-        'rmxbot.tasks.container.delete_data_from_container',
+        'container.tasks.delete_data_from_container',
 
-    'expected_files': 'rmxbot.tasks.container.expected_files',
+    'expected_files': 'container.tasks.expected_files',
 
-    'create_from_upload': 'rmxbot.tasks.container.create_from_upload',
+    'create_from_upload': 'container.tasks.create_from_upload',
 
-    'process_crawl_resp': 'rmxbot.tasks.container.process_crawl_resp',
+    'process_crawl_resp': 'container.tasks.process_crawl_resp',
 
-    'monitor_crawl': 'rmxbot.tasks.container.monitor_crawl',
+    'monitor_crawl': 'container.tasks.monitor_crawl',
 
-    'crawl_metrics': 'rmxbot.tasks.container.crawl_metrics',
+    'crawl_metrics': 'container.tasks.crawl_metrics',
 
 }
 

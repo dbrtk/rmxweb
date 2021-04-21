@@ -1,40 +1,28 @@
+
 import hashlib
 import os
 from typing import List
 
 from .models import Data as DataModel
-
-from ..apps.data.models import DataModel
-from ..apps.container.models import insert_urlobj
-from ..app import celery
+from rmxweb.celery import celery
 
 
 @celery.task
-def create_from_webpage(container_id: str = None,
+def create_from_webpage(containerid: str = None,
                         endpoint: str = None,
                         title: str = None,
-                        texthash: str = None,
                         data: str = None,
                         links: list = None):
     """ Task called within DataModel.create."""
-    doc, fileid = DataModel.create(
+    doc = DataModel.create(
         data=data,
-        container_id=container_id,
+        containerid=containerid,
         links=links,
         title=title,
         endpoint=endpoint
     )
-    if isinstance(doc, DataModel) and fileid:
-        insert_urlobj(
-            container_id,
-            {
-                'data_id': str(doc.get('_id')),
-                'url': endpoint,
-                'texthash': texthash or doc.get('hashtxt'),
-                'file_id': fileid,
-                'title': doc.get('title') or doc.get('url')
-            })
-        return str(doc.get_id()), fileid
+    if isinstance(doc, DataModel):
+        return doc.pk, doc.file_id
     return None, None
 
 

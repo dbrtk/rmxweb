@@ -3,8 +3,10 @@ import os
 import time
 from typing import List
 
-from celery import task
-from celery.execute import send_task
+from rmxweb.config import (
+    CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
+    PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS, SECONDS_AFTER_LAST_CALL
+)
 import requests
 
 from .models import (
@@ -13,10 +15,8 @@ from .models import (
     set_integrity_check_in_progress,
     set_crawl_ready)
 
-from django.conf.settings import (
-    CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
-    PROMETHEUS_URL, RMXBOT_TASKS, SCRASYNC_TASKS, SECONDS_AFTER_LAST_CALL
-)
+from .models import Container
+from rmxweb.celery import celery
 
 
 class Error(Exception):
@@ -27,7 +27,7 @@ class __Error(Error):
     pass
 
 
-@task(bind=True)
+@celery.task(bind=True)
 def generate_matrices_remote(
         self,
         corpusid: str = None,
@@ -51,31 +51,31 @@ def generate_matrices_remote(
         'path': corpus.get_folder_path(),
     }
     if os.path.isfile(vectors_path):
-        send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
+        celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
     else:
-        send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
+        celery.send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
 
 
-@task
+@celery.task
 def crawl_async(url_list: list = None, corpus_id=None, depth=1):
     """Starting the crawler in scrasync. Starting the task that will monitor
        the crawler.
     """
-    send_task(SCRASYNC_TASKS['create'], kwargs={
+    celery.send_task(SCRASYNC_TASKS['create'], kwargs={
         'endpoint': url_list,
         'corpusid': corpus_id,
         'depth': depth
     })
     # the countdown argument is here to make sure that this task does not
     # start immediately as prometheus may be empty.
-    send_task(
-        RMXBOT_TASKS['monitor_crawl'],
+    celery.send_task(
+        RMXWEB_TASKS['monitor_crawl'],
         args=[corpus_id],
         countdown=CRAWL_START_MONITOR_COUNTDOWN
     )
 
 
-@task
+@celery.task
 def nlp_callback_success(**kwds):
     """Called when a nlp callback is sent to proximitybot.
 
@@ -85,19 +85,20 @@ def nlp_callback_success(**kwds):
     corpus.update_on_nlp_callback(feats=kwds.get('feats'))
 
 
-@task
+@celery.task
 def test_task(a: int = None, b: int = None) -> int:
     """This is a test task."""
     return a + b
 
 
-@task
+@celery.task
 def file_extract_callback(kwds: dict = None):
     """ Called after creating a data object from an uploaded file.
 
     :param kwds:
     :return:
     """
+    # todo(): delete this task - don't use file upload
     corpusid = kwds.get('corpusid')
     data_id = kwds.get('data_id')
     file_id = kwds.get('file_id')
@@ -120,8 +121,8 @@ def file_extract_callback(kwds: dict = None):
     if not doc['expected_files']:
         if doc.matrix_exists:
 
-            send_task(
-                RMXBOT_TASKS['integrity_check'],
+            celery.send_task(
+                RMXWEB_TASKS['integrity_check'],
                 kwargs={
                     'corpusid': corpusid
                 }
@@ -130,33 +131,32 @@ def file_extract_callback(kwds: dict = None):
             set_crawl_ready(corpusid, True)
 
 
-@task
-def integrity_check(corpusid: str = None):
+@celery.task
+def integrity_check(containerid: str = None):
 
-    set_integrity_check_in_progress(corpusid, True)
-
-    send_task(NLP_TASKS['integrity_check'], kwargs={
-        'corpusid': corpusid,
-        'path': ContainerModel.inst_by_id(corpusid).get_folder_path(),
+    obj = Container.set_integrity_check_in_progress(containerid, True)
+    celery.send_task(NLP_TASKS['integrity_check'], kwargs={
+        'corpusid': containerid,
+        'path': obj.get_folder_path(),
     })
 
 
-@task
+@celery.task
 def integrity_check_callback(corpusid: str = None):
 
-    integrity_check_ready(corpusid)
+    Container.integrity_check_ready(corpusid)
 
 
-@task(bind=True)
+@celery.task(bind=True)
 def delete_data_from_container(
         self, corpusid: str = None, data_ids: List[str] = None):
 
-    corpus = ContainerModel.inst_by_id(corpusid)
+    obj = Container.objects.get(pk=corpusid)
 
-    corpus_files_path = corpus.texts_path()
-    dataid_fileid = corpus.dataid_fileid(data_ids=data_ids)
+    corpus_files_path = obj.texts_path()
+    dataid_fileid = obj.dataid_fileid(data_ids=data_ids)
 
-    corpus.del_data_objects(data_ids=data_ids)
+    obj.del_data_objects(data_ids=data_ids)
 
     for _path in [os.path.join(corpus_files_path, _[1])
                   for _ in dataid_fileid]:
@@ -167,18 +167,18 @@ def delete_data_from_container(
     params = {
         'kwargs': { 'corpusid': corpusid, 'dataids': data_ids }
     }
-    if corpus.matrix_exists:
+    if obj.matrix_exists:
         params['link'] = integrity_check.s()
 
-    send_task(
-        RMXBOT_TASKS['delete_data'],
+    celery.send_task(
+        RMXWEB_TASKS['delete_data'],
         **params
     )
 
     # delete_data.apply_async(**params)
 
 
-@task
+@celery.task
 def expected_files(corpusid: str = None, file_objects: list = None):
     """Updates the container with expected files that are processed."""
     ContainerModel.update_expected_files(
@@ -194,7 +194,7 @@ def expected_files(corpusid: str = None, file_objects: list = None):
     }
 
 
-@task
+@celery.task
 def create_from_upload(name: str = None, file_objects: list = None):
     """Creating a container from file upload."""
     docid = str(ContainerModel.inst_new_doc(name=name))
@@ -212,7 +212,7 @@ def create_from_upload(name: str = None, file_objects: list = None):
     }
 
 
-@task
+@celery.task
 def process_crawl_resp(resp, containerid):
     """
     Processing the crawl response.
@@ -225,33 +225,33 @@ def process_crawl_resp(resp, containerid):
 
         if not crawl_status['integrity_check_in_progress']:
 
-            send_task(
-                RMXBOT_TASKS['integrity_check'],
+            celery.send_task(
+                RMXWEB_TASKS['integrity_check'],
                 kwargs={'corpusid': containerid}
             )
     else:
-        send_task(
-            RMXBOT_TASKS['monitor_crawl'],
+        celery.send_task(
+            RMXWEB_TASKS['monitor_crawl'],
             args=[containerid],
             countdown=CRAWL_MONITOR_COUNTDOWN
         )
 
 
-@task
+@celery.task
 def monitor_crawl(containerid):
     """This task takes care of the crawl callback.
 
        The first parameter is empty becasue it is called as a linked task
        receiving a list of endpoints from the scrapper.
     """
-    send_task(
-        RMXBOT_TASKS['crawl_metrics'],
-        kwargs={ 'containerid': containerid },
+    celery.send_task(
+        RMXWEB_TASKS['crawl_metrics'],
+        kwargs={'containerid': containerid},
         link=process_crawl_resp.s(containerid)
     )
 
 
-@task
+@celery.task
 def crawl_metrics(containerid: str = None):
     """
     Querying all metrics for scrasync
