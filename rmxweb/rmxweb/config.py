@@ -29,6 +29,13 @@ MATRIX_FOLDER = 'matrix'
 
 CORPUS_MAX_SIZE = 500
 
+DATABASE_NAME = os.environ.get('DATABASE_NAME')
+DATABASE_USER = os.environ.get('DATABASE_USER')
+DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
+DATABASE_HOST = os.environ.get('DATABASE_HOST')
+DATABASE_PORT = os.environ.get('DATABASE_PORT')
+
+
 # todo(): get rid of the mongodb configuration
 # DATABASE configuration - MONGODB
 MONGODB_LOCATION = os.environ.get('MONGODB_LOCATION')
