@@ -14,20 +14,19 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY rmxweb /opt/program/rmxweb
-# COPY conf/nginx/nginx.conf /opt/program
-COPY serve /opt/program
-COPY requirements.txt /opt/program
+COPY conf/nginx/nginx.conf /opt/program
 
+# chmod perms on executables
+RUN chmod +x /opt/program/rmxweb/serve
+RUN ln -s /opt/program/rmxweb/serve /usr/local/bin/serve
 
 COPY celery.sh /opt/program
 # COPY celery_worker.py /opt/program
 
+COPY requirements.txt /opt/program
+
 RUN python3 -m pip install --upgrade pip && \
 	python3 -m pip install -r /opt/program/requirements.txt
-
-# chmod perms on executables
- RUN chmod +x /opt/program/serve
- RUN ln -s /opt/program/serve /usr/local/bin/serve
 
 WORKDIR /opt/program
 
@@ -40,3 +39,4 @@ ENV EXTRACTXT_ENDPOINT 'http://extractxt:8003'
 ENV DATA_ROOT '/data'
 # the tmp dir for rmxbot
 ENV TMP_DATA_DIR '/tmp'
+
