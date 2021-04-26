@@ -29,13 +29,6 @@ MATRIX_FOLDER = 'matrix'
 
 CORPUS_MAX_SIZE = 500
 
-DATABASE_NAME = os.environ.get('DATABASE_NAME')
-DATABASE_USER = os.environ.get('DATABASE_USER')
-DATABASE_PASSWORD = os.environ.get('DATABASE_PASSWORD')
-DATABASE_HOST = os.environ.get('DATABASE_HOST')
-DATABASE_PORT = os.environ.get('DATABASE_PORT')
-
-
 # todo(): get rid of the mongodb configuration
 # DATABASE configuration - MONGODB
 MONGODB_LOCATION = os.environ.get('MONGODB_LOCATION')
@@ -61,6 +54,22 @@ REQUEST_MAX_RETRIES = 5
 # time to wait in seconds after the last call made inside the crawler.
 # after that the container is set as ready
 SECONDS_AFTER_LAST_CALL = 30
+
+# =========================================>
+
+# RabbitMQ configuration
+# rabbitmq rpc queue name
+RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
+RPC_PUBLISH_QUEUES = {
+    'nlp': 'nlp',
+    'scrasync': 'scrasync',
+    'rmxgrep': 'rmxgrep',
+    'extractxt': 'extractxt'
+}
+# RabbitMQ login credentials
+
+# =========================================<
+
 
 # configurations for prometheus
 PROMETHEUS_HOST = os.environ.get('PROMETHEUS_HOST')

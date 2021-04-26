@@ -1,6 +1,4 @@
 
-import json
-
 from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 

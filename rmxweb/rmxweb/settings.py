@@ -48,13 +48,14 @@ INSTALLED_APPS = [
     'container.apps.ContainerConfig',
     'data.apps.DataConfig',
     'home.apps.HomeConfig',
+    'crawl.apps.CrawlConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -94,11 +95,11 @@ WSGI_APPLICATION = 'rmxweb.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': config.DATABASE_NAME,
-        'USER': config.DATABASE_USER,
-        'PASSWORD': config.DATABASE_PASSWORD,
-        'HOST': config.DATABASE_HOST,
-        'PORT': config.DATABASE_PORT or '5432',
+        'NAME': os.environ.get('DATABASE_NAME'),
+        'USER': os.environ.get('DATABASE_USERNAME'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
+        'HOST': os.environ.get('DATABASE_HOST'),
+        'PORT': os.environ.get('DATABASE_PORT', '5432'),
     }
 }
 
