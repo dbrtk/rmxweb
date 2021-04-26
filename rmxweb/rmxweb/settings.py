@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 from . import config
@@ -31,8 +31,7 @@ SECRET_KEY = 'django-insecure-+qg)02zhspk1g!p6mpwo&5v188*=6h^zm)t+onqhsjceg0c8oy
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', os.environ.get('DOCKER_HOST_NAME')]
 
 # Application definition
 
@@ -48,6 +47,7 @@ INSTALLED_APPS = [
 
     'container.apps.ContainerConfig',
     'data.apps.DataConfig',
+    'home.apps.HomeConfig',
 ]
 
 MIDDLEWARE = [
@@ -93,7 +93,7 @@ WSGI_APPLICATION = 'rmxweb.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
         'NAME': config.DATABASE_NAME,
         'USER': config.DATABASE_USER,
         'PASSWORD': config.DATABASE_PASSWORD,

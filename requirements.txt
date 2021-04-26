@@ -10,5 +10,6 @@ redis
 
 requests
 
-gevent
 gunicorn
+
+psycopg2-binary
