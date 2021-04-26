@@ -1,4 +1,6 @@
 
+import json
+
 from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 
@@ -76,7 +78,20 @@ class ContainerRecord(APIView):
 
 def test_celery(request, a, b):
 
-    return celery.send_task(config.RMXWEB_TASKS.get('test_task'), (a, b)).get()
+    print('\n\n\ntest_celery called!')
+    print(
+        f'task route: {config.RMXWEB_TASKS.get("test_task")};\na: {a}; b: {b}'
+    )
+    resp = celery.send_task(
+        config.RMXWEB_TASKS.get('test_task'),
+        args=[a, b],
+        queue='rmxweb'
+    ).get(timeout=3)
+
+    return JsonResponse({
+        'resp': resp
+    })
+
 
 # todo(): delete these views
 # class Urls(APIView):

@@ -42,7 +42,9 @@ result_serializer = 'json'
 
 task_routes = {
 
-    'rmxweb.tasks.*': {'queue': 'rmxweb'},
+    # 'rmxweb.*': {'queue': 'rmxweb'},
+    # 'container.*': {'queue': 'rmxweb'},
+    # 'data.*': {'queue': 'rmxweb'},
 
     'scrasync.*': {'queue': 'scrasync'},
 
