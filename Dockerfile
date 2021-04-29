@@ -8,6 +8,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	python3-venv \
 	python3-setuptools \
 	python3-pip \
+	postgresql \
 	ca-certificates \
     && apt-get -y autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/*
@@ -22,10 +23,7 @@ RUN python3 -m pip install --upgrade pip && \
 # setting up /opt/program as working directory
 WORKDIR /opt/program/rmxweb
 
-# run migrations on the databases
-RUN python3 manage.py makemigrations data ; \
-    python3 manage.py makemigrations container \
-    && python3 manage.py migrate
+RUN chmod a+x run.sh
 
 # environment variables
 

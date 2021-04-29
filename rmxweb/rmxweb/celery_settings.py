@@ -31,7 +31,7 @@ result_backend = f'redis://:{REDIS_PASS}@{BROKER_HOST_NAME}:{REDIS_PORT}/{REDIS_
 
 result_persistent = True
 
-imports = ('container.tasks', 'data.tasks')
+imports = ('container.tasks', 'data.tasks', 'crawl.tasks')
 
 result_expires = 30
 timezone = 'UTC'

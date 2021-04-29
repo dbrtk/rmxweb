@@ -60,6 +60,13 @@ class Container(models.Model):
         obj.container_ready = True
         return obj.save()
 
+    @classmethod
+    def create(cls, the_name: str = None):
+
+        obj = cls(name=the_name)
+        resp = obj.save()
+        return obj, resp
+
     def container_status(self):
         """Retrieves status related data for a container id."""
         return {

@@ -4,7 +4,7 @@ from rest_framework import serializers
 from . import models
 
 
-class ContainerSerializer(serializers.HyperlinkedModelSerializer):
+class ContainerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Container
@@ -12,7 +12,7 @@ class ContainerSerializer(serializers.HyperlinkedModelSerializer):
                   'container_ready']
 
 
-class CrawlStatusSerializer(serializers.HyperlinkedModelSerializer):
+class CrawlStatusSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.CrawlStatus

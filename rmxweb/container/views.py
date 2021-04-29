@@ -31,7 +31,22 @@ class ContainerList(APIView):
         crawl = request.data.get("crawl", True)
         crawl = True if crawl else crawl
 
+        container, resp = Container.create(the_name=the_name)
+        print(f'\n\n\nthe container: {container}\nthe response: {resp}')
+        print(f'\n\n\ncontainer type: {type(container)}\nresponse type: {type(resp)}')
+        depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
+
         print(f'\n\n\n\n\n post called on the container - creating a container record! ')
+
+        # todo(): pass the corpus file path to the crawler.
+        # celery.send_task(
+        #     config.RMXBOT_TASKS['crawl_async'],
+        #     kwargs={
+        #         'url_list': url_list,
+        #         'corpus_id': docid,
+        #         'depth': depth
+        #     }
+        # )
 
         return JsonResponse({
             'params': {

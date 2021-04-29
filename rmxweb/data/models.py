@@ -19,14 +19,14 @@ class Data(models.Model):
 
     container = models.ForeignKey(Container, on_delete=models.CASCADE)
 
-    # hostname = models.CharField(max_length=200)
+    hostname = models.CharField(max_length=200)
 
     # these fields were saved on the data object of the container.
-    data_id = models.IntegerField()
-    file_id = models.CharField(max_length=100)
-    file_path = models.CharField(max_length=300)
-    title = models.TextField()
-    hash_text = models.CharField(max_length=50)
+    data_id = models.IntegerField(blank=True, null=True)
+    file_id = models.CharField(max_length=100, blank=True, null=True)
+    file_path = models.CharField(max_length=300, blank=True, null=True)
+    title = models.TextField(blank=True, null=True)
+    hash_text = models.CharField(max_length=50, blank=True, null=True)
 
     # todo(): review the link field.
     # links = UrlListField()
