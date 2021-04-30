@@ -98,7 +98,7 @@ RMXWEB_TASKS = {
 
 SCRASYNC_TASKS = {
 
-    'create':  'scrasync.scraper.start_crawl',
+    'start_crawl':  'scrasync.scraper.start_crawl',
 
 }
 
