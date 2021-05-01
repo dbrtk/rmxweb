@@ -61,11 +61,13 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
     """Starting the crawler in scrasync. Starting the task that will monitor
        the crawler.
     """
+    print('\n\n\n\n\ncrawl async called')
     celery.send_task(SCRASYNC_TASKS['start_crawl'], kwargs={
         'endpoint': url_list,
         'containerid': containerid,
         'depth': depth
     })
+    print(f"scrasync task called: {SCRASYNC_TASKS['start_crawl']}")
     # the countdown argument is here to make sure that this task does not
     # start immediately as prometheus may be empty.
     celery.send_task(
@@ -73,6 +75,7 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
         args=[containerid],
         countdown=CRAWL_START_MONITOR_COUNTDOWN
     )
+    print(f"monitor_crawl called: {RMXWEB_TASKS['monitor_crawl']}")
 
 
 @celery.task
@@ -85,45 +88,45 @@ def nlp_callback_success(**kwds):
     corpus.update_on_nlp_callback(feats=kwds.get('feats'))
 
 
-@celery.task
-def file_extract_callback(kwds: dict = None):
-    """ Called after creating a data object from an uploaded file.
-
-    :param kwds:
-    :return:
-    """
-    # todo(): delete this task - don't use file upload
-    corpusid = kwds.get('corpusid')
-    data_id = kwds.get('data_id')
-    file_id = kwds.get('file_id')
-    file_name = kwds.get('file_name')
-    success = kwds.get('success')
-    texthash = kwds.get('texthash')
-    if success and data_id:
-        insert_urlobj(
-            corpusid,
-            {
-                'data_id': data_id,
-                'file_id': file_id,
-                'texthash': texthash,
-                'title': file_name,
-            }
-        )
-    doc = Container.file_extract_callback(
-        containerid=corpusid, unique_file_id=file_id)
-
-    if not doc['expected_files']:
-        if doc.matrix_exists:
-
-            celery.send_task(
-                RMXWEB_TASKS['integrity_check'],
-                kwargs={
-                    'corpusid': corpusid
-                }
-            )
-        else:
-            set_crawl_ready(corpusid, True)
-
+# @celery.task
+# def file_extract_callback(kwds: dict = None):
+#     """ Called after creating a data object from an uploaded file.
+#     # todo(): delete this!
+#     :param kwds:
+#     :return:
+#     """
+#     # todo(): delete this task - don't use file upload
+#     corpusid = kwds.get('corpusid')
+#     data_id = kwds.get('data_id')
+#     file_id = kwds.get('file_id')
+#     file_name = kwds.get('file_name')
+#     success = kwds.get('success')
+#     texthash = kwds.get('texthash')
+#     if success and data_id:
+#         insert_urlobj(
+#             corpusid,
+#             {
+#                 'data_id': data_id,
+#                 'file_id': file_id,
+#                 'texthash': texthash,
+#                 'title': file_name,
+#             }
+#         )
+#     doc = Container.file_extract_callback(
+#         containerid=corpusid, unique_file_id=file_id)
+#
+#     if not doc['expected_files']:
+#         if doc.matrix_exists:
+#
+#             celery.send_task(
+#                 RMXWEB_TASKS['integrity_check'],
+#                 kwargs={
+#                     'containerid': corpusid
+#                 }
+#             )
+#         else:
+#             set_crawl_ready(corpusid, True)
+#
 
 @celery.task
 def integrity_check(containerid: str = None):
@@ -141,69 +144,71 @@ def integrity_check_callback(corpusid: str = None):
     Container.integrity_check_ready(corpusid)
 
 
-@celery.task(bind=True)
-def delete_data_from_container(
-        self, corpusid: str = None, data_ids: List[str] = None):
-
-    obj = Container.objects.get(pk=corpusid)
-
-    corpus_files_path = obj.texts_path()
-    dataid_fileid = obj.dataid_fileid(data_ids=data_ids)
-
-    obj.del_data_objects(data_ids=data_ids)
-
-    for _path in [os.path.join(corpus_files_path, _[1])
-                  for _ in dataid_fileid]:
-        if not os.path.exists(_path):
-            raise RuntimeError(_path)
-        os.remove(_path)
-
-    params = {
-        'kwargs': { 'corpusid': corpusid, 'dataids': data_ids }
-    }
-    if obj.matrix_exists:
-        params['link'] = integrity_check.s()
-
-    celery.send_task(
-        RMXWEB_TASKS['delete_data'],
-        **params
-    )
-
-    # delete_data.apply_async(**params)
-
-
-@celery.task
-def expected_files(corpusid: str = None, file_objects: list = None):
-    """Updates the container with expected files that are processed."""
-    Container.update_expected_files(
-        containerid=corpusid, file_objects=file_objects)
-
-    corpus = Container.inst_by_id(corpusid)
-    return {
-        'corpusid': corpusid,
-        # 'vectors_path': corpus.get_vectors_path(),
-        'corpus_files_path': corpus.texts_path(),
-        # 'matrix_path': corpus.matrix_path,
-        # 'wf_path': corpus.wf_path,
-    }
-
-
-@celery.task
-def create_from_upload(name: str = None, file_objects: list = None):
-    """Creating a container from file upload."""
-    docid = str(Container.inst_new_doc(name=name))
-    corpus = Container.inst_by_id(docid)
-    corpus['expected_files'] = file_objects
-    corpus['data_from_files'] = True
-
-    # todo(): set status to busy
-    corpus.save()
-
-    return {
-        'corpusid': docid,
-        # 'corpus_path': corpus.get_corpus_path(),
-        'corpus_files_path': corpus.texts_path()
-    }
+# @celery.task(bind=True)
+# def delete_data_from_container(
+#         self, corpusid: str = None, data_ids: List[str] = None):
+#
+#     obj = Container.objects.get(pk=corpusid)
+#
+#     corpus_files_path = obj.texts_path()
+#     dataid_fileid = obj.dataid_fileid(data_ids=data_ids)
+#
+#     obj.del_data_objects(data_ids=data_ids)
+#
+#     for _path in [os.path.join(corpus_files_path, _[1])
+#                   for _ in dataid_fileid]:
+#         if not os.path.exists(_path):
+#             raise RuntimeError(_path)
+#         os.remove(_path)
+#
+#     params = {
+#         'kwargs': { 'corpusid': corpusid, 'dataids': data_ids }
+#     }
+#     if obj.matrix_exists:
+#         params['link'] = integrity_check.s()
+#
+#     celery.send_task(
+#         RMXWEB_TASKS['delete_data'],
+#         **params
+#     )
+#
+#     # delete_data.apply_async(**params)
+#
+#
+# @celery.task
+# def expected_files(corpusid: str = None, file_objects: list = None):
+#     """Updates the container with expected files that are processed."""
+#     # todo(): delete this
+#     Container.update_expected_files(
+#         containerid=corpusid, file_objects=file_objects)
+#
+#     corpus = Container.inst_by_id(corpusid)
+#     return {
+#         'corpusid': corpusid,
+#         # 'vectors_path': corpus.get_vectors_path(),
+#         'corpus_files_path': corpus.texts_path(),
+#         # 'matrix_path': corpus.matrix_path,
+#         # 'wf_path': corpus.wf_path,
+#     }
+#
+#
+# @celery.task
+# def create_from_upload(name: str = None, file_objects: list = None):
+#     """Creating a container from file upload."""
+#     # todo(): delete this
+#     docid = str(Container.inst_new_doc(name=name))
+#     corpus = Container.inst_by_id(docid)
+#     corpus['expected_files'] = file_objects
+#     corpus['data_from_files'] = True
+#
+#     # todo(): set status to busy
+#     corpus.save()
+#
+#     return {
+#         'corpusid': docid,
+#         # 'corpus_path': corpus.get_corpus_path(),
+#         'corpus_files_path': corpus.texts_path()
+#     }
 
 
 @celery.task
@@ -214,14 +219,13 @@ def process_crawl_resp(resp, containerid):
     :param containerid:
     :return:
     """
-    crawl_status = container_status(containerid)
+    crawl_status = Container.container_status(containerid)
     if resp.get('ready'):
-
         if not crawl_status['integrity_check_in_progress']:
 
             celery.send_task(
                 RMXWEB_TASKS['integrity_check'],
-                kwargs={'corpusid': containerid}
+                kwargs={'containerid': containerid}
             )
     else:
         celery.send_task(
@@ -310,6 +314,10 @@ def crawl_metrics(containerid: str = None):
 
 
 @celery.task
-def test_task(a: int = None, b: int = None) -> int:
+def test_task(a: int = None, b: int = None) -> dict:
     """This is a test task."""
-    return a + b
+    print(f'TASK SHOULD BE CALLED ON THE LEVEL OF RMXWORKER.................')
+    print(f"called test_task. the scrasync task is: {RMXWEB_TASKS['crawl_async']}")
+    return {
+        'sum': a + b
+    }

@@ -57,7 +57,7 @@ class Data(models.Model):
         if not container_obj:
             raise RuntimeError(containerid)
 
-        container_files_path = container_path(containerid)
+        container_files_path = container_obj.container_path()
         obj = cls(title=title, contianer=container_obj)
         _pk = obj.save()
 
@@ -107,6 +107,20 @@ class Data(models.Model):
         """Returns all the links for a given container id."""
         return self.link_set.all()
 
+    def container_path(self):
+        """
+        Returns the path for the files in the container.
+        :return:
+        """
+        path = os.path.abspath(os.path.normpath(
+            os.path.join(
+                config.CONTAINER_ROOT, self.pk, config.TEXT_FOLDER)
+            )
+        )
+        if os.path.isdir(path):
+            return path
+        return None
+
 
 class Link(models.Model):
     """ Model for every link that appears in a web page (Data model). """
@@ -126,14 +140,3 @@ def create_data_obj(container_id: int = None,
     data_obj = Data(container=contr, url=url, )
     data_obj.save()
 
-
-def container_path(container_id: str = None):
-    """ Returns the path for the files in the container. """
-    path = os.path.abspath(os.path.normpath(
-        os.path.join(
-            config.CONTAINER_ROOT, container_id, config.TEXT_FOLDER)
-        )
-    )
-    if os.path.isdir(path):
-        return path
-    return None

@@ -1,5 +1,6 @@
 
 import os
+import re
 
 # RabbitMQ login credentials
 RPC_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS')
@@ -42,9 +43,12 @@ result_serializer = 'json'
 
 task_routes = {
 
+    re.compile(r'(data|crawl|container)\..*'): {'queue': 'rmxweb'},
+
     # 'rmxweb.*': {'queue': 'rmxweb'},
     # 'container.*': {'queue': 'rmxweb'},
     # 'data.*': {'queue': 'rmxweb'},
+    # 'crawl.*': {'queue': 'rmxweb'},
 
     'scrasync.*': {'queue': 'scrasync'},
 
@@ -65,7 +69,7 @@ RMXWEB_TASKS = {
     'create': 'data.tasks.create',
 
 
-    'test_task': 'container.tasks.test_task',
+    'test_task': 'rmxweb.container.tasks.test_task',
 
     'generate_matrices_remote':
         'container.tasks.generate_matrices_remote',
