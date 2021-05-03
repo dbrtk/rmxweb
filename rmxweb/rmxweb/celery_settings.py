@@ -98,6 +98,7 @@ RMXWEB_TASKS = {
 
     'crawl_metrics': 'container.tasks.crawl_metrics',
 
+    'delete_crawl_status': 'crawl.tasks.delete_many',
 }
 
 SCRASYNC_TASKS = {

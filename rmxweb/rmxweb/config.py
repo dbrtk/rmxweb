@@ -22,26 +22,11 @@ EXTRACTXT_FILES_UPLOAD_URL = '{}/upload-files'.format(EXTRACTXT_ENDPOINT)
 
 # The path to the directory where corpora along with matrices are stored.
 # todo(): delete CORPUS_ROOT
-# CORPUS_ROOT = os.path.join(DATA_ROOT, '../container')
 CONTAINER_ROOT = os.path.join(DATA_ROOT, '../container')
 TEXT_FOLDER = 'text'
 MATRIX_FOLDER = 'matrix'
 
 CORPUS_MAX_SIZE = 500
-
-# todo(): get rid of the mongodb configuration
-# DATABASE configuration - MONGODB
-MONGODB_LOCATION = os.environ.get('MONGODB_LOCATION')
-MONGODB_NAME = os.environ.get('DATABASE_NAME')
-MONGO_PORT = os.environ.get('MONGO_PORT')
-MONGODB_USER = os.environ.get('DATABASE_USERNAME')
-MONGODB_PASS = os.environ.get('DATABASE_PASSWORD')
-
-# names given to the mongodb collections
-DATA_COLL = 'data'
-IMAGE_COLL = 'image'
-CORPUS_COLL = 'corpus'
-CLUSTER_COLL = 'cluster'
 
 # todo(): create a configuration for the connection to the sql database
 

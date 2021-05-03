@@ -24,6 +24,7 @@ RUN python3 -m pip install --upgrade pip && \
 WORKDIR /opt/program/rmxweb
 
 RUN chmod a+x run.sh
+RUN chmod a+x migrate-and-run.sh
 
 # environment variables
 

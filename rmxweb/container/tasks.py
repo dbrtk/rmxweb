@@ -61,13 +61,11 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
     """Starting the crawler in scrasync. Starting the task that will monitor
        the crawler.
     """
-    print('\n\n\n\n\ncrawl async called')
     celery.send_task(SCRASYNC_TASKS['start_crawl'], kwargs={
         'endpoint': url_list,
         'containerid': containerid,
         'depth': depth
     })
-    print(f"scrasync task called: {SCRASYNC_TASKS['start_crawl']}")
     # the countdown argument is here to make sure that this task does not
     # start immediately as prometheus may be empty.
     celery.send_task(
@@ -291,6 +289,10 @@ def crawl_metrics(containerid: str = None):
     resp = resp.json()
     result = resp.get('data', {}).get('result', [])
     if not result:
+        # this is returned when the crawl is finished and the container is
+        # ready.
+        celery.send_task(RMXWEB_TASKS['delete_crawl_status'],
+                         kwargs={'containerid': containerid})
         return {
             'ready': True,
             'result': result,
@@ -316,8 +318,6 @@ def crawl_metrics(containerid: str = None):
 @celery.task
 def test_task(a: int = None, b: int = None) -> dict:
     """This is a test task."""
-    print(f'TASK SHOULD BE CALLED ON THE LEVEL OF RMXWORKER.................')
-    print(f"called test_task. the scrasync task is: {RMXWEB_TASKS['crawl_async']}")
     return {
         'sum': a + b
     }

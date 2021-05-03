@@ -22,7 +22,7 @@ class Container(models.Model):
     container_ready = models.BooleanField(default=False)
     integrity_check_in_progress = models.BooleanField(default=False)
 
-    uid = models.UUIDField(default=uuid.uuid4)
+    uid = models.UUIDField(default=uuid.uuid4, unique=True)
 
     @classmethod
     def get_object(cls, pk):
@@ -72,8 +72,8 @@ class Container(models.Model):
         :return:
         """
         obj = cls(name=the_name)
-        obj.create_folder()
         obj.save()
+        obj.create_folder()
         return obj
 
     @classmethod
@@ -131,9 +131,11 @@ class Container(models.Model):
     # path and data related methods
     def get_folder_path(self):
         """ Returns the path to the container directory. """
+        if not isinstance(self.pk, int):
+            raise RuntimeError(self)
         return os.path.abspath(os.path.normpath(
             os.path.join(
-                config.CONTAINER_ROOT, self.pk  # uid.hex
+                config.CONTAINER_ROOT, str(self.pk)  # uid.hex
             )
         ))
 
