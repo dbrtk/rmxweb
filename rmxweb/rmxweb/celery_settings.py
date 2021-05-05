@@ -74,7 +74,7 @@ RMXWEB_TASKS = {
     'generate_matrices_remote':
         'container.tasks.generate_matrices_remote',
 
-    'crawl_async': 'container.tasks.crawl_async',
+    # 'crawl_async': 'container.tasks.crawl_async',
 
     'nlp_callback_success': 'container.tasks.nlp_callback_success',
 
@@ -98,12 +98,13 @@ RMXWEB_TASKS = {
 
     'crawl_metrics': 'container.tasks.crawl_metrics',
 
-    'delete_crawl_status': 'crawl.tasks.delete_many',
 }
 
 SCRASYNC_TASKS = {
 
-    'start_crawl':  'scrasync.scraper.start_crawl',
+    'launch_crawl': 'scrasync.scraper.launch_crawl',
+
+    'delete_crawl_status': 'scrasync.tasks.delete_many',
 
 }
 

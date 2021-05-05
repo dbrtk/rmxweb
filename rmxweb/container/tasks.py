@@ -56,24 +56,25 @@ def generate_matrices_remote(
         celery.send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
 
 
-@celery.task
-def crawl_async(url_list: list = None, containerid=None, depth=1):
-    """Starting the crawler in scrasync. Starting the task that will monitor
-       the crawler.
-    """
-    celery.send_task(SCRASYNC_TASKS['start_crawl'], kwargs={
-        'endpoint': url_list,
-        'containerid': containerid,
-        'depth': depth
-    })
-    # the countdown argument is here to make sure that this task does not
-    # start immediately as prometheus may be empty.
-    celery.send_task(
-        RMXWEB_TASKS['monitor_crawl'],
-        args=[containerid],
-        countdown=CRAWL_START_MONITOR_COUNTDOWN
-    )
-    print(f"monitor_crawl called: {RMXWEB_TASKS['monitor_crawl']}")
+# @celery.task
+# def crawl_async(url_list: list = None, containerid=None, depth=1):
+#     """Starting the crawler in scrasync. Starting the task that will monitor
+#        the crawler.
+#     """
+#     # todo(): delete
+#     crawlid = celery.send_task(SCRASYNC_TASKS['launch_crawl'], kwargs={
+#         'endpoint': url_list,
+#         'containerid': containerid,
+#         'depth': depth
+#     }).get()
+#     # the countdown argument is here to make sure that this task does not
+#     # start immediately as prometheus may be empty.
+#     celery.send_task(
+#         RMXWEB_TASKS['monitor_crawl'],
+#         args=[containerid],
+#         countdown=CRAWL_START_MONITOR_COUNTDOWN
+#     )
+#     print(f"monitor_crawl called: {RMXWEB_TASKS['monitor_crawl']}")
 
 
 @celery.task
@@ -234,7 +235,7 @@ def process_crawl_resp(resp, containerid):
 
 
 @celery.task
-def monitor_crawl(containerid):
+def monitor_crawl(containerid: int = None, crawlid: str = None):
     """This task takes care of the crawl callback.
 
        The first parameter is empty becasue it is called as a linked task
@@ -242,13 +243,13 @@ def monitor_crawl(containerid):
     """
     celery.send_task(
         RMXWEB_TASKS['crawl_metrics'],
-        kwargs={'containerid': containerid},
+        kwargs={'containerid': containerid, 'crawlid': crawlid},
         link=process_crawl_resp.s(containerid)
     )
 
 
 @celery.task
-def crawl_metrics(containerid: str = None):
+def crawl_metrics(containerid: int = None, crawlid: str = None):
     """
     Querying all metrics for scrasync
     the response = {
@@ -291,8 +292,10 @@ def crawl_metrics(containerid: str = None):
     if not result:
         # this is returned when the crawl is finished and the container is
         # ready.
-        celery.send_task(RMXWEB_TASKS['delete_crawl_status'],
-                         kwargs={'containerid': containerid})
+        celery.send_task(
+            SCRASYNC_TASKS['delete_crawl_status'],
+            kwargs={'containerid': containerid, 'crawlid': crawlid}
+        )
         return {
             'ready': True,
             'result': result,

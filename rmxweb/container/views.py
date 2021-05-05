@@ -2,6 +2,7 @@
 from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 
+from .emit import crawl_async
 from .models import Container
 from .serializers import ContainerSerializer
 from rmxweb.celery import celery
@@ -35,14 +36,15 @@ class ContainerList(APIView):
         depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
 
         # todo(): pass the corpus file path to the crawler.
-        celery.send_task(
-            config.RMXWEB_TASKS['crawl_async'],
-            kwargs={
-                'url_list': url_list,
-                'containerid': container.pk,
-                'depth': depth
-            }
-        )
+        # celery.send_task(
+        #     config.RMXWEB_TASKS['crawl_async'],
+        #     kwargs={
+        #         'url_list': url_list,
+        #         'containerid': container.pk,
+        #         'depth': depth
+        #     }
+        # )
+        crawl_async(url_list=url_list, containerid=container.pk, depth=depth)
         return JsonResponse({
             'params': {
                 'name': the_name,

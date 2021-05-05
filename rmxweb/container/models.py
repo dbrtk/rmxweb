@@ -170,6 +170,23 @@ class Container(models.Model):
                 os.chmod(_path, stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO)
         return path
 
+    def get_container_id(self): return self.uid
+
+    def container_path(self):
+        """
+        Returns the path for the files in the container.
+        :return:
+        """
+        path = os.path.abspath(os.path.normpath(
+            os.path.join(
+                config.CONTAINER_ROOT, str(self.pk), config.TEXT_FOLDER)
+            )
+        )
+        if os.path.isdir(path):
+            return path
+        return None
+
+
     # def features_availability(self, feature_number: int = 10):
     #     """ Checking feature's availability. """
     #     status = self.get_status_feats(feats=feature_number)

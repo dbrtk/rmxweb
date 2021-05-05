@@ -58,7 +58,7 @@ class Data(models.Model):
             raise RuntimeError(containerid)
 
         container_files_path = container_obj.container_path()
-        obj = cls(title=title, contianer=container_obj)
+        obj = cls(title=title, container=container_obj)
         _pk = obj.save()
 
         endpoint_obj = Link(url=endpoint, data=obj, seed=True)
@@ -106,20 +106,6 @@ class Data(models.Model):
     def get_all_links(self):
         """Returns all the links for a given container id."""
         return self.link_set.all()
-
-    def container_path(self):
-        """
-        Returns the path for the files in the container.
-        :return:
-        """
-        path = os.path.abspath(os.path.normpath(
-            os.path.join(
-                config.CONTAINER_ROOT, self.pk, config.TEXT_FOLDER)
-            )
-        )
-        if os.path.isdir(path):
-            return path
-        return None
 
 
 class Link(models.Model):

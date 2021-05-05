@@ -3,7 +3,9 @@
 """
 
 from rmxweb.celery import celery
-from rmxweb.config import NLP_TASKS
+from rmxweb.config import (
+    CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS, SCRASYNC_TASKS, RMXWEB_TASKS
+)
 
 
 def get_available_features(containerid, folder_path):
@@ -13,3 +15,20 @@ def get_available_features(containerid, folder_path):
         kwargs={'corpusid': containerid, 'path': folder_path}).get()
     return result
 
+
+def crawl_async(url_list: list = None, containerid=None, depth=1):
+    """Starting the crawler in scrasync. Starting the task that will monitor
+       the crawler.
+    """
+    crawlid = celery.send_task(SCRASYNC_TASKS['launch_crawl'], kwargs={
+        'endpoint': url_list,
+        'containerid': containerid,
+        'depth': depth
+    }).get()
+    # the countdown argument is here to make sure that this task does not
+    # start immediately as prometheus may be empty.
+    celery.send_task(
+        RMXWEB_TASKS['monitor_crawl'],
+        kwargs={'containerid': containerid, 'crawlid': crawlid},
+        countdown=CRAWL_START_MONITOR_COUNTDOWN
+    )

@@ -8,7 +8,6 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 	python3-venv \
 	python3-setuptools \
 	python3-pip \
-	postgresql \
 	ca-certificates \
     && apt-get -y autoremove && apt-get autoclean \
     && rm -rf /var/lib/apt/lists/*

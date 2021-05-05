@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'container.apps.ContainerConfig',
     'data.apps.DataConfig',
     'home.apps.HomeConfig',
-    'crawl.apps.CrawlConfig',
+    # 'crawl.apps.CrawlConfig',
 ]
 
 MIDDLEWARE = [
