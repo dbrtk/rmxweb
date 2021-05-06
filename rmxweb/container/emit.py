@@ -32,3 +32,4 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
         kwargs={'containerid': containerid, 'crawlid': crawlid},
         countdown=CRAWL_START_MONITOR_COUNTDOWN
     )
+    return crawlid

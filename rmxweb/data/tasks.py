@@ -3,6 +3,7 @@ import hashlib
 import os
 from typing import List
 
+from container.models import Container
 from .models import Data as DataModel
 from rmxweb.celery import celery
 
@@ -27,12 +28,36 @@ def create_from_webpage(containerid: str = None,
 
 
 @celery.task
-def delete_data(dataids: List[str] = None, corpusid: str = None):
+def delete_data(dataids: List[str] = None, containerid: str = None):
+    """
 
-    response = DataModel.delete_many(dataids=dataids)
-    del response
-    # todo(): process response
-    return corpusid
+    :param dataids:
+    :param containerid:
+    :return:
+    """
+    container = Container.get_object(containerid)
+
+    for obj in DataModel.objects.filter(pk__in=dataids):
+        # _path = obj.get_file_path(container=container)
+        if container != obj.container:
+            continue
+        _path = obj.file_path
+        if not os.path.exists(_path):
+            raise RuntimeError(_path)
+        os.remove(_path)
+        obj.delete()
+
+    params = {
+        'kwargs': { 'containerid': containerid, 'dataids': dataids}
+    }
+    # if obj.matrix_exists:
+    #     params['link'] = integrity_check.s()
+    #
+    # celery.send_task(
+    #     RMXWEB_TASKS['delete_data'],
+    #     **params
+    # )
+
 
 
 @celery.task
@@ -85,3 +110,13 @@ def create(corpusid: str = None,
         out['success'] = False
 
     return out
+
+
+@celery.task
+def delete_many(data_ids: list = None):
+    """
+
+    :param data_ids:
+    :return:
+    """
+    pass

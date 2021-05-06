@@ -44,7 +44,8 @@ class ContainerList(APIView):
         #         'depth': depth
         #     }
         # )
-        crawl_async(url_list=url_list, containerid=container.pk, depth=depth)
+        crawlid = crawl_async(
+            url_list=url_list, containerid=container.pk, depth=depth)
         return JsonResponse({
             'params': {
                 'name': the_name,
@@ -52,6 +53,7 @@ class ContainerList(APIView):
                 'endpoint': endpoint,
                 'crawl': crawl,
             },
+            'crawlid': crawlid,
             'rpc_queues': config.RPC_PUBLISH_QUEUES,
             'post': request.data
         })
@@ -88,10 +90,6 @@ class ContainerRecord(APIView):
 
 def test_celery(request, a, b):
 
-    print('\n\n\ntest_celery called!')
-    print(
-        f'task route: {config.RMXWEB_TASKS.get("test_task")};\na: {a}; b: {b}'
-    )
     resp = celery.send_task(
         "scrasync.tasks.test_task",
         args=[a, b],

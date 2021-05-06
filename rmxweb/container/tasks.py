@@ -15,6 +15,7 @@ import requests
 #     set_integrity_check_in_progress,
 #     set_crawl_ready)
 
+from data.models import Data as DataModel
 from .models import Container
 from rmxweb.celery import celery
 
@@ -54,27 +55,6 @@ def generate_matrices_remote(
         celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
     else:
         celery.send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
-
-
-# @celery.task
-# def crawl_async(url_list: list = None, containerid=None, depth=1):
-#     """Starting the crawler in scrasync. Starting the task that will monitor
-#        the crawler.
-#     """
-#     # todo(): delete
-#     crawlid = celery.send_task(SCRASYNC_TASKS['launch_crawl'], kwargs={
-#         'endpoint': url_list,
-#         'containerid': containerid,
-#         'depth': depth
-#     }).get()
-#     # the countdown argument is here to make sure that this task does not
-#     # start immediately as prometheus may be empty.
-#     celery.send_task(
-#         RMXWEB_TASKS['monitor_crawl'],
-#         args=[containerid],
-#         countdown=CRAWL_START_MONITOR_COUNTDOWN
-#     )
-#     print(f"monitor_crawl called: {RMXWEB_TASKS['monitor_crawl']}")
 
 
 @celery.task
@@ -143,37 +123,38 @@ def integrity_check_callback(corpusid: str = None):
     Container.integrity_check_ready(corpusid)
 
 
-# @celery.task(bind=True)
-# def delete_data_from_container(
-#         self, corpusid: str = None, data_ids: List[str] = None):
-#
-#     obj = Container.objects.get(pk=corpusid)
-#
-#     corpus_files_path = obj.texts_path()
-#     dataid_fileid = obj.dataid_fileid(data_ids=data_ids)
-#
-#     obj.del_data_objects(data_ids=data_ids)
-#
-#     for _path in [os.path.join(corpus_files_path, _[1])
-#                   for _ in dataid_fileid]:
-#         if not os.path.exists(_path):
-#             raise RuntimeError(_path)
-#         os.remove(_path)
-#
-#     params = {
-#         'kwargs': { 'corpusid': corpusid, 'dataids': data_ids }
-#     }
-#     if obj.matrix_exists:
-#         params['link'] = integrity_check.s()
-#
-#     celery.send_task(
-#         RMXWEB_TASKS['delete_data'],
-#         **params
-#     )
-#
-#     # delete_data.apply_async(**params)
-#
-#
+@celery.task
+def delete_data_from_container(
+        containerid: str = None, data_ids: List[str] = None):
+    """
+
+    :param containerid:
+    :param data_ids:
+    :return:
+    """
+    container = Container.get_object(containerid)
+    for obj in DataModel.objects.filter(pk__in=data_ids):
+        # _path = obj.get_file_path(container=container)
+        if container != obj.container:
+            continue
+        _path = obj.file_path
+        if not os.path.exists(_path):
+            raise RuntimeError(_path)
+        os.remove(_path)
+        obj.delete()
+
+    params = {
+        'kwargs': { 'corpusid': containerid, 'dataids': data_ids}
+    }
+    if obj.matrix_exists:
+        params['link'] = integrity_check.s()
+
+    celery.send_task(
+        RMXWEB_TASKS['delete_data'],
+        **params
+    )
+
+
 # @celery.task
 # def expected_files(corpusid: str = None, file_objects: list = None):
 #     """Updates the container with expected files that are processed."""

@@ -17,4 +17,3 @@ class CrawlStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CrawlStatus
         fields = ['type', 'busy', 'feats', 'task_name', 'task_id', 'container']
-

@@ -13,3 +13,5 @@ requests
 gunicorn
 
 psycopg2-binary
+
+remote-pdb

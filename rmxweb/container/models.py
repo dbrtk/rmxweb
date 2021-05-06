@@ -1,9 +1,9 @@
 """ Models for the container that holds data related to specific crawls.
 """
 
-import datetime
 import os
 import stat
+from typing import List
 import uuid
 
 from django.db import models
@@ -131,11 +131,9 @@ class Container(models.Model):
     # path and data related methods
     def get_folder_path(self):
         """ Returns the path to the container directory. """
-        if not isinstance(self.pk, int):
-            raise RuntimeError(self)
         return os.path.abspath(os.path.normpath(
             os.path.join(
-                config.CONTAINER_ROOT, str(self.pk)  # uid.hex
+                config.CONTAINER_ROOT, self.uid.hex
             )
         ))
 
@@ -179,13 +177,18 @@ class Container(models.Model):
         """
         path = os.path.abspath(os.path.normpath(
             os.path.join(
-                config.CONTAINER_ROOT, str(self.pk), config.TEXT_FOLDER)
+                self.get_folder_path(), config.TEXT_FOLDER)
             )
         )
         if os.path.isdir(path):
             return path
         return None
 
+    def dataid_fileid(self, data_ids: List[str] = None) -> List[tuple]:
+        """Returns a mapping between data ids and file ids."""
+        return [
+            (_.pk, _.file_id,) for _ in self.data_set.filter(pk__in=data_ids)
+        ]
 
     # def features_availability(self, feature_number: int = 10):
     #     """ Checking feature's availability. """

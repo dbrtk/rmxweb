@@ -32,7 +32,7 @@ result_backend = f'redis://:{REDIS_PASS}@{BROKER_HOST_NAME}:{REDIS_PORT}/{REDIS_
 
 result_persistent = True
 
-imports = ('container.tasks', 'data.tasks', 'crawl.tasks')
+imports = ('container.tasks', 'data.tasks')
 
 result_expires = 30
 timezone = 'UTC'
@@ -43,12 +43,7 @@ result_serializer = 'json'
 
 task_routes = {
 
-    re.compile(r'(data|crawl|container)\..*'): {'queue': 'rmxweb'},
-
-    # 'rmxweb.*': {'queue': 'rmxweb'},
-    # 'container.*': {'queue': 'rmxweb'},
-    # 'data.*': {'queue': 'rmxweb'},
-    # 'crawl.*': {'queue': 'rmxweb'},
+    re.compile(r'(data|container)\..*'): {'queue': 'rmxweb'},
 
     'scrasync.*': {'queue': 'scrasync'},
 
@@ -73,8 +68,6 @@ RMXWEB_TASKS = {
 
     'generate_matrices_remote':
         'container.tasks.generate_matrices_remote',
-
-    # 'crawl_async': 'container.tasks.crawl_async',
 
     'nlp_callback_success': 'container.tasks.nlp_callback_success',
 

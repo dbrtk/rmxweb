@@ -21,8 +21,7 @@ EXTRACTXT_ENDPOINT = os.environ.get('EXTRACTXT_ENDPOINT')
 EXTRACTXT_FILES_UPLOAD_URL = '{}/upload-files'.format(EXTRACTXT_ENDPOINT)
 
 # The path to the directory where corpora along with matrices are stored.
-# todo(): delete CORPUS_ROOT
-CONTAINER_ROOT = os.path.join(DATA_ROOT, '../container')
+CONTAINER_ROOT = os.path.join(DATA_ROOT, 'container')
 TEXT_FOLDER = 'text'
 MATRIX_FOLDER = 'matrix'
 
@@ -68,3 +67,9 @@ RMXGREP_TASK = celery_settings.RMXGREP_TASK
 SCRASYNC_TASKS = celery_settings.SCRASYNC_TASKS
 NLP_TASKS = celery_settings.NLP_TASKS
 RMXCLUSTER_TASKS = celery_settings.RMXCLUSTER_TASKS
+
+
+# hexdigest size
+DIGEST_SIZE = 64
+HEXDIGEST_SIZE = 128
+
