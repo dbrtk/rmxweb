@@ -35,15 +35,6 @@ class ContainerList(APIView):
         container = Container.create(the_name=the_name)
         depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
 
-        # todo(): pass the corpus file path to the crawler.
-        # celery.send_task(
-        #     config.RMXWEB_TASKS['crawl_async'],
-        #     kwargs={
-        #         'url_list': url_list,
-        #         'containerid': container.pk,
-        #         'depth': depth
-        #     }
-        # )
         crawlid = crawl_async(
             url_list=url_list, containerid=container.pk, depth=depth)
         return JsonResponse({
@@ -98,22 +89,3 @@ def test_celery(request, a, b):
     return JsonResponse({
         'resp': resp
     })
-
-
-# todo(): delete these views
-# class Urls(APIView):
-#
-#     pass
-#
-#
-# class UrlRecord(APIView):
-#
-#     pass
-#
-#
-# class CrawlStatus(APIView):
-#     pass
-#
-#
-# class CrawlStatusRecord(APIView):
-#     pass

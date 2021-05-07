@@ -8,12 +8,11 @@ from rmxweb.config import (
 )
 
 
-def get_available_features(containerid, folder_path):
+def get_available_features(containerid: int = None, folder_path: str = None):
     """Retrieves available features from nlp"""
-    result = celery.send_task(
+    return celery.send_task(
         NLP_TASKS['available_features'],
         kwargs={'corpusid': containerid, 'path': folder_path}).get()
-    return result
 
 
 def crawl_async(url_list: list = None, containerid=None, depth=1):
@@ -33,3 +32,27 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
         countdown=CRAWL_START_MONITOR_COUNTDOWN
     )
     return crawlid
+
+
+@celery.task
+def get_features(feats: int = 10,
+                 words: int = 6,
+                 containerid: int = None,
+                 path: str = None,
+                 docs_per_feat: int = 0,
+                 feats_per_doc: int = 3):
+    """ Getting the features from nlp. This will call a view method that
+        will retrieve or generate the requested data.
+    """
+
+    features, docs = celery.send_task(
+        NLP_TASKS['features_and_docs'], kwargs={
+            'path': path,
+            'feats': feats,
+            'containerid': containerid,
+            'words': words,
+            'docs_per_feat': docs_per_feat,
+            'feats_per_doc': feats_per_doc
+        }
+    ).get()
+    return features, docs

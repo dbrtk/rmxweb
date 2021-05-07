@@ -40,7 +40,7 @@ def generate_matrices_remote(
     """ Generating matrices on the remote server. This is used when nlp lives
         on its own machine.
     """
-    corpus = Container.inst_by_id(corpusid)
+    corpus = Container.get_object(pk=corpusid)
     corpus.set_status_feats(busy=True, feats=feats, task_name=self.name,
                             task_id=self.request.id)
     kwds = {
@@ -63,8 +63,8 @@ def nlp_callback_success(**kwds):
 
        This task is called by the nlp container.
     """
-    corpus = Container.inst_by_id(kwds.get('corpusid'))
-    corpus.update_on_nlp_callback(feats=kwds.get('feats'))
+    container = Container.get_object(pk=kwds.get('corpusid'))
+    container.update_on_nlp_callback(feats=kwds.get('feats'))
 
 
 # @celery.task
@@ -109,50 +109,39 @@ def nlp_callback_success(**kwds):
 
 @celery.task
 def integrity_check(containerid: str = None):
-
-    obj = Container.set_integrity_check_in_progress(containerid, True)
+    """
+    Checks the integrity of the container after the crawler finishes.
+    :param containerid:
+    :return:
+    """
+    obj = Container.set_integrity_check_in_progress(containerid, value=True)
     celery.send_task(NLP_TASKS['integrity_check'], kwargs={
-        'corpusid': containerid,
+        'containerid': containerid,
         'path': obj.get_folder_path(),
     })
 
 
 @celery.task
-def integrity_check_callback(corpusid: str = None):
-
-    Container.integrity_check_ready(corpusid)
+def integrity_check_callback(containerid: int = None):
+    """Task called after the integrity check succeeds on the level of NLP."""
+    Container.integrity_check_ready(containerid)
 
 
 @celery.task
 def delete_data_from_container(
-        containerid: str = None, data_ids: List[str] = None):
+        containerid: str = None, data_ids: List[int] = None):
     """
-
     :param containerid:
     :param data_ids:
     :return:
     """
     container = Container.get_object(containerid)
-    for obj in DataModel.objects.filter(pk__in=data_ids):
-        # _path = obj.get_file_path(container=container)
-        if container != obj.container:
-            continue
-        _path = obj.file_path
-        if not os.path.exists(_path):
-            raise RuntimeError(_path)
-        os.remove(_path)
-        obj.delete()
-
-    params = {
-        'kwargs': { 'corpusid': containerid, 'dataids': data_ids}
-    }
-    if obj.matrix_exists:
-        params['link'] = integrity_check.s()
-
-    celery.send_task(
-        RMXWEB_TASKS['delete_data'],
-        **params
-    )
+    DataModel.delete_many(data_ids=data_ids, containerid=containerid)
+    if container.matrix_exists:
+        celery.send_task(
+            RMXWEB_TASKS['integrity_check'],
+            kwargs={'containerid': containerid}
+        )
 
 
 # @celery.task
@@ -162,7 +151,7 @@ def delete_data_from_container(
 #     Container.update_expected_files(
 #         containerid=corpusid, file_objects=file_objects)
 #
-#     corpus = Container.inst_by_id(corpusid)
+#     corpus = Container.get_object(pk=corpusid)
 #     return {
 #         'corpusid': corpusid,
 #         # 'vectors_path': corpus.get_vectors_path(),
@@ -177,7 +166,7 @@ def delete_data_from_container(
 #     """Creating a container from file upload."""
 #     # todo(): delete this
 #     docid = str(Container.inst_new_doc(name=name))
-#     corpus = Container.inst_by_id(docid)
+#     corpus = Container.get_object(pk=docid)
 #     corpus['expected_files'] = file_objects
 #     corpus['data_from_files'] = True
 #
@@ -194,7 +183,8 @@ def delete_data_from_container(
 @celery.task
 def process_crawl_resp(resp, containerid):
     """
-    Processing the crawl response.
+    Processing the response of the crawler. This task checks if the crawl is
+    ready and if it finished. If yes, the integrity_check is called.
     :param resp:
     :param containerid:
     :return:
@@ -202,7 +192,6 @@ def process_crawl_resp(resp, containerid):
     crawl_status = Container.container_status(containerid)
     if resp.get('ready'):
         if not crawl_status['integrity_check_in_progress']:
-
             celery.send_task(
                 RMXWEB_TASKS['integrity_check'],
                 kwargs={'containerid': containerid}

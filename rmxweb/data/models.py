@@ -3,6 +3,7 @@
 import hashlib
 import os
 import stat
+import typing
 import urllib.parse
 import uuid
 
@@ -113,6 +114,23 @@ class Data(models.Model):
     def get_all_links(self):
         """Returns all the links for a given container id."""
         return self.link_set.all()
+
+    @classmethod
+    def delete_many(cls, data_ids: typing.List[int], containerid: int = None):
+        """
+        Delete many objects for a given containerid and a list of data ids.
+        :param data_ids:
+        :param containerid:
+        :return:
+        """
+        container = Container.get_object(pk=containerid)
+        for obj in cls.objects.filter(pk__in=data_ids):
+            if container != obj.container:
+                continue
+            _path = obj.file_path
+            if os.path.exists(_path):
+                os.remove(_path)
+            obj.delete()
 
 
 class Link(models.Model):
