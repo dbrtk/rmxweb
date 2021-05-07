@@ -1,7 +1,9 @@
 
+from django.core import serializers
 from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 
+from data.serializers import DatasetSerializer
 from .emit import crawl_async
 from .models import Container
 from .serializers import ContainerSerializer
@@ -54,7 +56,7 @@ class ContainerRecord(APIView):
 
     def get_object(self, pk):
         try:
-            return Container.objects.get(pk=pk)
+            return Container.get_object(pk=pk)
         except Container.DoesNotExist:
             raise Http404
 
@@ -67,8 +69,14 @@ class ContainerRecord(APIView):
         :return:
         """
         container = self.get_object(pk)
-        serializer = ContainerSerializer(container)
-        return JsonResponse(serializer.data)
+        container_serializer = ContainerSerializer(self.get_object(pk))
+        data_serializer = DatasetSerializer(container.data_set.all(), many=True)
+        dataset = data_serializer.data
+        return JsonResponse({
+            'dataset': data_serializer.data,
+            'dataset_length': len(dataset),
+            'container': container_serializer.data,
+            'containerid': pk})
 
     def put(self, request, pk, format=None):
 

@@ -8,8 +8,8 @@ class ContainerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Container
-        fields = ['name', 'crawl_ready', 'integrity_check_in_progress',
-                  'container_ready']
+        fields = ['pk', 'name', 'crawl_ready', 'integrity_check_in_progress',
+                  'container_ready', 'created', 'updated', 'uid']
 
 
 class CrawlStatusSerializer(serializers.ModelSerializer):
