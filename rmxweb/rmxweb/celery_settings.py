@@ -57,11 +57,11 @@ task_routes = {
 
 RMXWEB_TASKS = {
 
-    'delete_data': 'data.tasks.delete_data',
+    'delete_many': 'data.tasks.delete_many',
 
     'create_from_webpage': 'data.tasks.create_from_webpage',
 
-    'create': 'data.tasks.create',
+    # 'create': 'data.tasks.create',
 
 
     'test_task': 'rmxweb.container.tasks.test_task',

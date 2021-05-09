@@ -8,13 +8,6 @@ from rmxweb.config import (
     PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS, SECONDS_AFTER_LAST_CALL
 )
 import requests
-
-# from .models import (
-#     ContainerModel, container_status, insert_urlobj,
-#     integrity_check_ready,
-#     set_integrity_check_in_progress,
-#     set_crawl_ready)
-
 from data.models import Data as DataModel
 from .models import Container
 from rmxweb.celery import celery
@@ -31,7 +24,7 @@ class __Error(Error):
 @celery.task(bind=True)
 def generate_matrices_remote(
         self,
-        corpusid: str = None,
+        containerid: str = None,
         feats: int = 10,
         words: int = 6,
         vectors_path: str = None,
@@ -40,11 +33,11 @@ def generate_matrices_remote(
     """ Generating matrices on the remote server. This is used when nlp lives
         on its own machine.
     """
-    corpus = Container.get_object(pk=corpusid)
+    corpus = Container.get_object(pk=containerid)
     corpus.set_status_feats(busy=True, feats=feats, task_name=self.name,
                             task_id=self.request.id)
     kwds = {
-        'corpusid': corpusid,
+        'containerid': containerid,
         'feats': int(feats),
         'words': words,
         'docs_per_feat': int(docs_per_feat),
@@ -63,7 +56,7 @@ def nlp_callback_success(**kwds):
 
        This task is called by the nlp container.
     """
-    container = Container.get_object(pk=kwds.get('corpusid'))
+    container = Container.get_object(pk=kwds.get('containerid'))
     container.update_on_nlp_callback(feats=kwds.get('feats'))
 
 

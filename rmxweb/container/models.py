@@ -1,7 +1,9 @@
 """ Models for the container that holds data related to specific crawls.
 """
 import datetime
+import json
 import os
+import re
 import stat
 from typing import List
 import uuid
@@ -92,27 +94,14 @@ class Container(models.Model):
         }
 
     @classmethod
-    def request_availability(cls, containerid, reqobj: dict, container=None):
-        """ Checks for the availability of a feature.
-        The reqobj should look like this:
-        {
-            public: 'bool - if true, send this message to the group',
-            features: 'the number of features',
-            words: 'the number of feature words',
-            documents: 'the number of documents per feature'
-        }
+    def paginate(cls, start: int = 0, end: int = 100):
+        """ Paginate containers.
+        :param start:
+        :param end:
+        :return:
         """
-        structure = dict(
-            features=int
-        )
-        for k, v in reqobj.items():
-            if not isinstance(v, structure.get(k)):
-                raise ValueError(reqobj)
-
-        container = container or cls.objects.get(pk=containerid)
-        availability = container.features_availability(
-            feature_number=reqobj['features'])
-        return availability
+        return cls.objects.filter(
+            crawl_ready=True, container_ready=True)[start:end + 1]
 
     @property
     def matrix_path(self):
@@ -132,6 +121,12 @@ class Container(models.Model):
            associated with this container.
         """
         return [_.pk for _ in self.data_set.all()]
+
+    def is_ready(self):
+        """ Returns a boolean if the container is ready or not."""
+        if not self.integrity_check_in_progress:
+            return self.crawl_ready and self.container_ready
+        return False
 
     # path and data related methods
     def get_folder_path(self):
@@ -183,7 +178,7 @@ class Container(models.Model):
 
     def container_path(self):
         """
-        Returns the path for the files in the container.
+        Returns the path for the text files in the container.
         :return:
         """
         path = os.path.abspath(os.path.normpath(
@@ -251,6 +246,15 @@ class Container(models.Model):
         self.save()
         FeaturesStatus.del_status_feats(feats=feats, containerid=self.pk)
 
+    def get_features_count(self, verbose: bool = False):
+        """ Returning the features count. """
+        avl = get_available_features(containerid=self.pk,
+                                     folder_path=self.get_folder_path())
+        if verbose:
+            return avl
+        else:
+            return sorted([int(_.get('featcount')) for _ in avl])
+
     def get_features(self,
                      feats: int = 10,
                      words: int = 6,
@@ -295,6 +299,19 @@ class Container(models.Model):
             doc['title'] = _.title
             doc['fileid'] = _.file_id
         return docs
+
+    def get_lemma_words(self, lemma: (str, list) = None):
+        """For a list of lemma, returns all the words that can be found in
+           texts.
+        """
+        lemma_list = lemma.split(',') if isinstance(lemma, str) else lemma
+        if not all(isinstance(_, str) for _ in lemma):
+            raise ValueError(lemma)
+        pattern = r"""(\{.*(%s).*\})""" % '|'.join(lemma_list)
+        with open(self.get_lemma_path(), 'r') as _file:
+            content = _file.read()
+            dicts = [_[0] for _ in re.findall(pattern, content)]
+            return map(json.loads, dicts), lemma_list
 
 
 class CrawlStatus(models.Model):

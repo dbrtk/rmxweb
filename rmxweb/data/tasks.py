@@ -24,6 +24,16 @@ def create_from_webpage(containerid: str = None,
     return None, None
 
 
+@celery.task
+def delete_many(containerid: str = None, data_ids: list = None):
+    """
+    Delete many data objects that match a containerid and a lit of data ids.
+    :param containerid:
+    :param data_ids:
+    :return:
+    """
+    DataModel.delete_many(data_ids=data_ids, containerid=containerid)
+
 # @celery.task
 # def create(corpusid: str = None,
 #            fileid: str = None,
