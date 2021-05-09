@@ -31,7 +31,7 @@ RUN chmod a+x migrate-and-run.sh
 ENV EXTRACTXT_ENDPOINT 'http://extractxt:8003'
 
 # the data root
-ENV DATA_ROOT '/data'
+ ENV DATA_ROOT '/data'
 # the tmp dir for rmxweb
 ENV TMP_DATA_DIR '/tmp'
 

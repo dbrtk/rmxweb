@@ -1,6 +1,6 @@
 
-from django.core import serializers
 from django.http import Http404, JsonResponse
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from data.serializers import DatasetSerializer
@@ -32,7 +32,8 @@ class ContainerList(APIView):
         endpoint = request.data.get('endpoint')
         url_list = [endpoint]
         crawl = request.data.get("crawl", True)
-        crawl = True if crawl else crawl
+        if not isinstance(crawl, bool):
+            raise ValueError(request.data)
 
         container = Container.create(the_name=the_name)
         depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
@@ -79,12 +80,50 @@ class ContainerRecord(APIView):
             'containerid': pk})
 
     def put(self, request, pk, format=None):
+        """
+        Updating the container with a new seed endpoint, this will launch the
+        crawler on an existing container.
+        :param request:
+        :param pk:
+        :param format:
+        :return:
+        """
+        the_name = request.data.get('name')
+        endpoint = request.data.get('endpoint')
+        crawl = request.data.get("crawl", True)
+        if not isinstance(crawl, bool):
+            raise ValueError(request.data)
+        container = Container.get_object(pk=pk)
+        resp = {}
 
-        pass
+        if the_name:
+            container.name = the_name
+            container.save()
+            resp = {
+                'data': request.data,
+                'name': the_name,
+            }
+        if endpoint:
+            depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
+            crawlid = crawl_async(
+                url_list=[endpoint], containerid=container.pk, depth=depth)
+            resp = {
+                'endpoint': endpoint,
+                'crawlid': crawlid,
+                'data': request.data
+            }
+        return Response(resp, status=200)
 
     def delete(self, request, pk, format=None):
-
-        pass
+        """
+        Delete a container from the database.
+        :param request:
+        :param pk:
+        :param format:
+        :return:
+        """
+        Container.get_object(pk=pk).delete()
+        return JsonResponse({'msg': 'deleted container with id: {pk}'})
 
 
 def test_celery(request, a, b):

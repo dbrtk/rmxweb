@@ -8,24 +8,28 @@ import urllib.parse
 import uuid
 
 from django.db import models
-
+from django.core import validators
 from .errors import DuplicateUrlError
 from container.models import Container
 from rmxweb import config
 
 
 class Data(models.Model):
-
+    """ The Data model holds the information related to the url and the data
+    file on the server.
+    """
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
     container = models.ForeignKey(Container, on_delete=models.CASCADE)
 
-    url = models.URLField(null=True)
-    hostname = models.CharField(max_length=200, null=True)
+    url = models.TextField(validators=[validators.URLValidator()], null=True)
+    hostname = models.CharField(max_length=500, null=True)
+
+    # if True the data object is a crawl seed
+    seed = models.BooleanField(default=False)
 
     # these fields were saved on the data object of the container.
-
     file_id = models.UUIDField(default=uuid.uuid4, editable=False)
     file_path = models.CharField(max_length=500, blank=True, null=True)
     title = models.TextField(blank=True, null=True)
@@ -47,7 +51,8 @@ class Data(models.Model):
             containerid: int = None,
             links: list = None,
             title: str = None,
-            endpoint: str = None):
+            endpoint: str = None,
+            seed: bool = False):
         """
         Create and save a Data object with all the urls that make it.
 
@@ -56,6 +61,7 @@ class Data(models.Model):
         :param links:
         :param title:
         :param endpoint:
+        :param seed:
         :return:
         """
         container_obj = Container.get_object(containerid)
@@ -63,6 +69,7 @@ class Data(models.Model):
         obj = cls(title=title,
                   container=container_obj,
                   url=endpoint,
+                  seed=seed,
                   hostname=url_parse.hostname)
 
         file_path = obj.get_file_path(container=container_obj)
@@ -136,9 +143,9 @@ class Data(models.Model):
 class Link(models.Model):
     """ Model for every link that appears in a web page (Data model). """
     created = models.DateTimeField(auto_now_add=True)
-    url = models.URLField(max_length=500)
+    url = models.TextField(validators=[validators.URLValidator()], null=True)
     data = models.ForeignKey(Data, on_delete=models.CASCADE)
-    hostname = models.CharField(max_length=200, null=True)
+    hostname = models.CharField(max_length=500, null=True)
 
     @classmethod
     def create(cls, url: str = None, data: Data = None):

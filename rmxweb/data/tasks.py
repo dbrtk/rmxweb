@@ -6,6 +6,7 @@ from rmxweb.celery import celery
 @celery.task
 def create_from_webpage(containerid: str = None,
                         endpoint: str = None,
+                        seed: bool = False,
                         title: str = None,
                         data: str = None,
                         links: list = None):
@@ -15,7 +16,8 @@ def create_from_webpage(containerid: str = None,
         containerid=containerid,
         links=links,
         title=title,
-        endpoint=endpoint
+        endpoint=endpoint,
+        seed=seed
     )
     if isinstance(doc, DataModel):
         return doc.pk, doc.file_id

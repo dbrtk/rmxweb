@@ -9,5 +9,5 @@ class DatasetSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = models.Data
-        fields = ['pk', 'created', 'updated', 'url', 'hostname', 'title',
-                  'file_id', 'hash_text', 'container_id']
+        fields = ['pk', 'created', 'updated', 'url', 'seed', 'hostname',
+                  'title', 'file_id', 'hash_text', 'container_id']
