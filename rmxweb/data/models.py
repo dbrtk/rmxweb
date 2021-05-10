@@ -47,7 +47,6 @@ class Data(models.Model):
     @classmethod
     def get_object(cls, pk: int = None):
         """Retrieves an object for a given pk."""
-        obj = None
         try:
             obj = cls.objects.get(pk=pk)
         except cls.DoesNoExist as _:

@@ -1,9 +1,11 @@
 
+from decorators.metrics import trackprogress
 from .models import Data as DataModel
 from rmxweb.celery import celery
 
 
 @celery.task
+@trackprogress(dtype='create_from_webpage')
 def create_from_webpage(containerid: str = None,
                         endpoint: str = None,
                         seed: bool = False,

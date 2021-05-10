@@ -3,13 +3,15 @@ import os
 import time
 from typing import List
 
+from data.models import Data as DataModel
+from decorators.metrics import CREATE_DOC_PROG_PREFIX
+from .models import Container
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
-    PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS, SECONDS_AFTER_LAST_CALL
+    PROMETHEUS_JOB, PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS,
+    SECONDS_AFTER_LAST_CALL
 )
 import requests
-from data.models import Data as DataModel
-from .models import Container
 from rmxweb.celery import celery
 
 
@@ -221,13 +223,13 @@ def crawl_metrics(containerid: int = None, crawlid: str = None):
             'resultType': 'vector',
             'result': [{
                 'metric': {
-                    '__name__': 'parse_and_save__lastcall_<containerid>',
+                    '__name__': 'create_from_webpage__lastcall_<containerid>',
                     'job': 'scrasync'
                 },
                 'value': [1613125321.823, '1613125299.354587']
             }, {
                 'metric': {
-                    '__name__': 'parse_and_save__succes_<containerid>',
+                    '__name__': 'create_from_webpage__succes_<containerid>',
                     'job': 'scrasync'
                 }, 'value': [1613125321.823, '1613125299.3545368']
             }]
@@ -236,14 +238,15 @@ def crawl_metrics(containerid: int = None, crawlid: str = None):
     """
     ready = False
 
-    exception = f'parse_and_save__exception_{containerid}'
-    success = f'parse_and_save__succes_{containerid}'
-    lastcall = f'parse_and_save__lastcall_{containerid}'
-    query = '{{__name__=~"{success}|{lastcall}|{exception}",job="scrasync"}}'\
+    exception = f'{CREATE_DOC_PROG_PREFIX}__exception_{containerid}'
+    success = f'{CREATE_DOC_PROG_PREFIX}__succes_{containerid}'
+    lastcall = f'{CREATE_DOC_PROG_PREFIX}__lastcall_{containerid}'
+    query = '{{__name__=~"{success}|{lastcall}|{exception}",job="{job}"}}'\
         .format(
             success=success,
             exception=exception,
-            lastcall=lastcall
+            lastcall=lastcall,
+            job=PROMETHEUS_JOB
         )
     endpoint = f'http://{PROMETHEUS_URL}/query?query={query}'
     del_endpoint = 'http://{}/admin/tsdb/delete_series?match={}'.format(
@@ -263,7 +266,7 @@ def crawl_metrics(containerid: int = None, crawlid: str = None):
             'ready': True,
             'result': result,
             'msg': 'no records in prometheus',
-            'containerid': str(containerid)
+            'containerid': containerid
         }
     lastcall_obj = next(
         _ for _ in result
@@ -274,7 +277,7 @@ def crawl_metrics(containerid: int = None, crawlid: str = None):
         ready = True
         # resp = requests.post(del_endpoint)
     return {
-        'containerid': str(containerid),
+        'containerid': containerid,
         'ready': ready,
         'msg': 'crawl ready',
         'result': result

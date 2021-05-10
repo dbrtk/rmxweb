@@ -5,6 +5,8 @@ djangorestframework
 markdown
 django-filter
 
+prometheus_client
+
 celery
 redis
 

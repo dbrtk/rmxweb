@@ -59,6 +59,10 @@ RPC_PUBLISH_QUEUES = {
 PROMETHEUS_HOST = os.environ.get('PROMETHEUS_HOST')
 PROMETHEUS_PORT = os.environ.get('PROMETHEUS_PORT')
 PROMETHEUS_URL = f'{PROMETHEUS_HOST}:{PROMETHEUS_PORT}/api/v1'
+PROMETHEUS_JOB = 'rmxweb'
+
+PUSHGATEWAY_PORT = os.environ.get('PUSHGATEWAY_PORT')
+PUSHGATEWAY_HOST = os.environ.get('PUSHGATEWAY_HOST')
 
 
 # celery task routes - these are imported in the apps or tasks
