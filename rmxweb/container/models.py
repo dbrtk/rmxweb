@@ -3,11 +3,13 @@
 import datetime
 import json
 import os
+import pytz
 import re
 import stat
 from typing import List
 import uuid
 
+from django.conf import settings
 from django.db import models
 
 from .emit import get_available_features, get_features
@@ -41,34 +43,6 @@ class Container(models.Model):
                 f"container with pk: `{pk}` or uid: `{uid}` doesn't exist"
             )
         return obj
-
-    @classmethod
-    def set_crawl_ready(cls, containerid, value: bool = None):
-        """ Set the value of crawl_ready on the container. """
-        if not isinstance(value, bool):
-            raise RuntimeError(value)
-        obj = cls.get_object(pk=containerid)
-        obj.crawl_ready = value
-        return obj.save()
-
-    @classmethod
-    def set_integrity_check_in_progress(cls, containerid, value: bool = None):
-        """ Set the value of crawl_ready on the container. """
-        if not isinstance(value, bool):
-            raise RuntimeError(value)
-        obj = cls.get_object(pk=containerid)
-        obj.integrity_check_in_progress = value
-        obj.save()
-        return obj
-
-    @classmethod
-    def integrity_check_ready(cls, containerid):
-        """Called when a crawl and the integrity check succeed."""
-        obj = cls.get_object(pk=containerid)
-        obj.integrity_check_in_progress = False
-        obj.crawl_ready = True
-        obj.container_ready = True
-        return obj.save()
 
     @classmethod
     def create(cls, the_name: str = None):
@@ -127,6 +101,29 @@ class Container(models.Model):
         if not self.integrity_check_in_progress:
             return self.crawl_ready and self.container_ready
         return False
+
+    def set_crawl_ready(self, value: bool = True):
+        """Called after starting or finishing the crawl."""
+        self.crawl_ready = value
+        if value:
+            if not self.integrity_check_in_progress:
+                self.container_ready = True
+        else:
+            self.container_ready = False
+        self.save()
+
+    def set_integrity_check_in_progress(self):
+        """ Set the value of crawl_ready on the container. """
+        self.integrity_check_in_progress = True
+        self.container_ready = False
+        self.save()
+
+    def set_integrity_check_ready(self):
+        """Called when a crawl and the integrity check succeed."""
+        self.integrity_check_in_progress = False
+        if self.crawl_ready:
+            self.container_ready = True
+        self.save()
 
     # path and data related methods
     def get_folder_path(self):
@@ -193,7 +190,7 @@ class Container(models.Model):
     def dataid_fileid(self, data_ids: List[str] = None) -> List[tuple]:
         """Returns a mapping between data ids and file ids."""
         return [
-            (_.pk, _.file_id,) for _ in self.data_set.filter(pk__in=data_ids)
+            (_.pk, _.dataid,) for _ in self.data_set.filter(pk__in=data_ids)
         ]
 
     # feature related methods ==========================================
@@ -209,9 +206,10 @@ class Container(models.Model):
             'containerid': self.pk,
             'busy': False
         }
+        time_zone = pytz.timezone(settings.TIME_ZONE)
         if status:
             if status.busy is True and status.feats == feature_number:
-                delta = datetime.datetime.now() - status.updated
+                delta = datetime.datetime.now(time_zone) - status.updated
                 delta = divmod(delta.total_seconds(), 60)
                 # after 15 minutes, the status lock should be deleted (in case
                 # of bugs, crashes).
@@ -285,7 +283,8 @@ class Container(models.Model):
         """ Mapping a list of given docs to feature's doc. """
         for _ftr in features:
             for _doc in _ftr.get('docs'):
-                _ = next(_ for _ in data_set if _.pk == _doc.get('dataid'))
+                _ = next(_ for _ in data_set if
+                         _.dataid == _doc.get('dataid'))
                 _doc['title'] = _.title
                 _doc['url'] = _.url
         return features
@@ -294,10 +293,10 @@ class Container(models.Model):
         """
         """
         for doc in docs:
-            _ = next(_ for _ in data_set if _.pk == doc.get('dataid'))
+            _ = next(_ for _ in data_set if _.dataid == doc.get('dataid'))
             doc['url'] = _.url
             doc['title'] = _.title
-            doc['fileid'] = _.file_id
+            doc['fileid'] = _.dataid
         return docs
 
     def get_lemma_words(self, lemma: (str, list) = None):
@@ -353,7 +352,10 @@ class FeaturesStatus(models.Model):
     @classmethod
     def get_status_feats(cls, containerid: int = None, feats: int = None):
 
-        obj = cls.objects.get(containerid=containerid, feats=feats)
+        try:
+            obj = cls.objects.get(containerid=containerid, feats=feats)
+        except cls.DoesNotExist as _:
+            return None
         return obj
 
     @classmethod
@@ -361,8 +363,10 @@ class FeaturesStatus(models.Model):
                          busy: bool = True):
         obj = cls.get_status_feats(feats=feats, containerid=containerid)
         if obj:
-            return obj
-        obj = cls.create(busy=busy, containerid=containerid, feats=feats)
+            obj.busy = busy
+            obj.save()
+        else:
+            obj = cls.create(busy=busy, containerid=containerid, feats=feats)
         return obj
 
     @classmethod

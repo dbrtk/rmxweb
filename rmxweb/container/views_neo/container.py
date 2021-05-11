@@ -3,12 +3,10 @@ from django.http import Http404, JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .data import request_features, graph
 from data.serializers import DatasetSerializer
-from .decorators import feats_available
-from .emit import compute_features, crawl_async
-from .models import Container
-from .serializers import ContainerSerializer
+from ..emit import crawl_async
+from ..models import Container
+from ..serializers import ContainerSerializer
 from rmxweb.celery import celery
 from rmxweb import config
 
@@ -130,89 +128,22 @@ class ContainerRecord(APIView):
 
 class FeaturesList(APIView):
     """Lists all the features that belong to a container."""
-    # todo(): delete this class!
-    def get(self, request, containerid: int = None, format=None):
+    def get(self, request, format=None):
         """Returns the features for a given container."""
-
-        return JsonResponse({
-            'msg': f'list of all features for container with id: {containerid}',
-            'pk': containerid,
-        })
-
-
-class Features(APIView):
-    """Returns a specific feature defined by the features number."""
-
-    def get(self, request, containerid: int = None, format=None):
-        """
-        Returns features for a given containerid and parameters defined in the
-        request's GET dictionary. The expected parameters are:
-        containerid: int = None,
-        words: int = 10,
-        features: int = 10,
-        docsperfeat: int = 5,
-        featsperdoc: int = 3
-
-        :param request:
-        :param containerid:
-        :param format:
-        :return:
-        """
-        params = request.GET.dict()
-        required = ['containerid', 'features']
-        params['containerid'] = containerid
-        structure = {
-            'containerid': int,
-            'words': int,
-            'features': int,
-            'docsperfeat': int,
-            'featsperdoc': int
-        }
-
-        if not all(_ in params for _ in required):
-            return JsonResponse({
-                'error': True, 'prams': params,
-                'expected': list(structure.keys())
-            })
-        for k, v in params.items():
-            try:
-                params[k] = int(v)
-                _ = structure[k]
-            except (ValueError, KeyError):
-                return JsonResponse({
-                    'error': True, 'key': k, 'value': value, 'params': params,
-                    'expected': list(structure.keys())
-                })
-        response = request_features(**params)
-
-        return JsonResponse({
-            'containerid': containerid,
-            'data': response,
-            'words': params.get('words'),
-            'featsperdoc': params.get('featsperdoc'),
-            'docsperfeat': params.get('docsperfeat'),
-            'feats': params.get('features')
-        })
-
-    def post(self, request, containerid: int = None, feats: int = 10,
-             format=None):
-        """Creating features for a container and a feats number."""
-        resp = request_features(containerid=containerid, features=feats)
-        container = Container.get_object(pk=containerid)
-        if not container:
-            return Http404(f"The container with id: {containerid} doesn't exist.")
-        compute_features()
-
-    def delete(self, request, containerid: int = None, feats: int = 10, format=None):
-        """Delete features for a given container."""
         pass
 
 
+class FeaturesRecord(APIView):
+    """Returns a specific feature defined by the features number."""
+    def get(self, request, feats: int = 10, format=None):
+        pass
 
-@feats_available
-def get_features(request):
+    def post(self, request, feats: int = 10, format=None):
+        pass
 
-    return JsonResponse({'msg': 'features'})
+    def delete(self, request, feats: int = 10, format=None):
+        """Delete features for a given container."""
+        pass
 
 
 def test_celery(request, a, b):

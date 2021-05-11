@@ -45,6 +45,8 @@ INSTALLED_APPS = [
 
     'rest_framework',
 
+    # 'graphene_django',
+
     'container.apps.ContainerConfig',
     'data.apps.DataConfig',
     'home.apps.HomeConfig',

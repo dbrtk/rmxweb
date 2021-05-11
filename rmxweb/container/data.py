@@ -57,8 +57,7 @@ def crawl(containerid: str = None, endpoint: str = None, crawl: bool = True):
     container = Container.get_object(pk=containerid)
     if not container:
         return Http404(f"container with id `{container.pk}` does not exist")
-    Container.set_crawl_ready(containerid, False)
-
+    container.set_crawl_ready(value=False)
     celery.send_task(
         RMXWEB_TASKS['crawl_async'],
         kwargs={
@@ -180,7 +179,8 @@ def delete_texts(containerid: str = None, dataids: typing.List[str] = None):
     """
     if not all(isinstance(str, _) for _ in dataids):
         raise ValueError(dataids)
-    Container.set_crawl_ready(containerid, False)
+    container = Container.get_object(pk=containerid)
+    container.set_crawl_ready(value=False)
 
     celery.send_task(
         RMXWEB_TASKS['delete_many'],
@@ -263,7 +263,19 @@ def lemma_context(containerid, words: typing.List[str] = None):
 
 @feats_available
 def request_features(reqobj):
-    """Checks for features availability and returns these.
+    """
+    Checks for features availability and returns these.
+    Retrieving the available features from the nlp. If the features are not
+    available, they will be computed along with all necessary matrices and
+    objects.
+
+    these parameters are expected by the decorator:
+    containerid: int = None,
+    words: int = 10,
+    features: int = 10,
+    docsperfeat: int = 5,
+    featsperdoc: int = 3
+
     :param reqobj:
     :return:
     """
@@ -280,8 +292,19 @@ def request_features(reqobj):
 
 @feats_available
 def graph(reqobj):
-    """ Retrieving data (links and nodes) for a force-directed graph. This
-        function maps the documents and features to links and nodes.
+    """
+    Retrieving data (links and nodes) for a force-directed graph. This function
+    maps the documents and features to links and nodes.
+
+    these parameters are expected by the decorator:
+    containerid: int = None,
+    words: int = 10,
+    features: int = 10,
+    docsperfeat: int = 5,
+    featsperdoc: int = 3
+
+    :param reqobj:
+    :return:
     """
 
     container = reqobj.get('container')

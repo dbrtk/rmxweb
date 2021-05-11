@@ -46,10 +46,10 @@ def trackprogress(dtype: str = None):
             registry = promc.CollectorRegistry()
             containerid = kwds.get('containerid')
 
-            print(
-                f'inside the wrapper. containerid: {containerid}; dtype: {dtype}',
-                flush=True
-            )
+            # print(
+            #     f'inside the wrapper. containerid: {containerid}; dtype: {dtype}',
+            #     flush=True
+            # )
             try:
                 gtime = promc.Gauge(
                     make_progress_name(dtype, containerid),

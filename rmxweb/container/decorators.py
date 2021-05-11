@@ -6,10 +6,20 @@ from rmxweb.celery import celery
 from rmxweb import config
 
 
+def feats_httpreq(func):
+
+    @wraps(func)
+    def wrapped_view(request):
+        pass
+    return wrapped_view
+
+
 def feats_available(func):
     """Decorator that checks if requested features have been computed. If it's
        not the case, they are generated. This decorator is used by the graphql
        api.
+
+       This decorates functions and not django's views.
     """
     @wraps(func)
     def wrapped_view(containerid: int = None, words: int = 10,

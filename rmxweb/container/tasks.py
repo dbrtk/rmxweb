@@ -5,7 +5,7 @@ from typing import List
 
 from data.models import Data as DataModel
 from decorators.metrics import CREATE_DOC_PROG_PREFIX
-from .models import Container
+from .models import Container, FeaturesStatus
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
     PROMETHEUS_JOB, PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS,
@@ -35,16 +35,19 @@ def generate_matrices_remote(
     """ Generating matrices on the remote server. This is used when nlp lives
         on its own machine.
     """
-    corpus = Container.get_object(pk=containerid)
-    corpus.set_status_feats(busy=True, feats=feats, task_name=self.name,
-                            task_id=self.request.id)
+    container = Container.get_object(pk=containerid)
+    FeaturesStatus.set_status_feats(
+        containerid=container.pk,
+        busy=True,
+        feats=feats,
+    )
     kwds = {
         'containerid': containerid,
         'feats': int(feats),
         'words': words,
         'docs_per_feat': int(docs_per_feat),
         'feats_per_doc': int(feats_per_doc),
-        'path': corpus.get_folder_path(),
+        'path': container.get_folder_path(),
     }
     if os.path.isfile(vectors_path):
         celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
@@ -109,7 +112,8 @@ def integrity_check(containerid: str = None):
     :param containerid:
     :return:
     """
-    obj = Container.set_integrity_check_in_progress(containerid, value=True)
+    obj = Container.get_object(pk=containerid)
+    obj.set_integrity_check_in_progress()
     celery.send_task(NLP_TASKS['integrity_check'], kwargs={
         'containerid': containerid,
         'path': obj.get_folder_path(),
@@ -119,7 +123,8 @@ def integrity_check(containerid: str = None):
 @celery.task
 def integrity_check_callback(containerid: int = None):
     """Task called after the integrity check succeeds on the level of NLP."""
-    Container.integrity_check_ready(containerid)
+    container = Container.get_object(pk=containerid)
+    container.set_integrity_check_ready()
 
 
 @celery.task
@@ -176,16 +181,24 @@ def delete_data_from_container(
 
 
 @celery.task
-def process_crawl_resp(resp, containerid):
+def process_crawl_resp(resp, containerid, crawlid):
     """
     Processing the response of the crawler. This task checks if the crawl is
     ready and if it finished. If yes, the integrity_check is called.
+
+    This task processes the response form crawl_metrics.
     :param resp:
     :param containerid:
     :return:
     """
     crawl_status = Container.container_status(containerid)
     if resp.get('ready'):
+        celery.send_task(
+            SCRASYNC_TASKS['delete_crawl_status'],
+            kwargs={'containerid': containerid, 'crawlid': crawlid}
+        )
+        container = Container.get_object(pk=containerid)
+        container.set_crawl_ready(value=True)
         if not crawl_status['integrity_check_in_progress']:
             celery.send_task(
                 RMXWEB_TASKS['integrity_check'],
@@ -208,13 +221,13 @@ def monitor_crawl(containerid: int = None, crawlid: str = None):
     """
     celery.send_task(
         RMXWEB_TASKS['crawl_metrics'],
-        kwargs={'containerid': containerid, 'crawlid': crawlid},
-        link=process_crawl_resp.s(containerid)
+        kwargs={'containerid': containerid},
+        link=process_crawl_resp.s(containerid, crawlid)
     )
 
 
 @celery.task
-def crawl_metrics(containerid: int = None, crawlid: str = None):
+def crawl_metrics(containerid: int = None):
     """
     Querying all metrics for scrasync
     the response = {
@@ -256,12 +269,8 @@ def crawl_metrics(containerid: int = None, crawlid: str = None):
     resp = resp.json()
     result = resp.get('data', {}).get('result', [])
     if not result:
-        # this is returned when the crawl is finished and the container is
-        # ready.
-        celery.send_task(
-            SCRASYNC_TASKS['delete_crawl_status'],
-            kwargs={'containerid': containerid, 'crawlid': crawlid}
-        )
+        # This is returned when there are no results; the crawl is finished
+        # and the container is ready.
         return {
             'ready': True,
             'result': result,

@@ -48,7 +48,7 @@ class Data(models.Model):
     def get_object(cls, pk: int = None):
         """Retrieves an object for a given pk."""
         try:
-            obj = cls.objects.get(pk=pk)
+            obj = cls.objects.get(containerid=pk)
         except cls.DoesNoExist as _:
             raise ValueError(
                 f"Data object with pk: `{pk}` doesn't exist."
@@ -150,6 +150,11 @@ class Data(models.Model):
                 os.remove(_path)
             obj.delete()
 
+    @property
+    def dataid(self):
+        """Returns the file_id as a hex string."""
+        return self.file_id.hex
+
 
 class Link(models.Model):
     """ Model for every link that appears in a web page (Data model). """
@@ -172,7 +177,7 @@ class Link(models.Model):
 def create_data_obj(container_id: int = None,
                     url: str = None):
 
-    contr = Container.objects.get(pk=container_id)
+    contr = Container.objects.get(containerid=container_id)
     if not contr:
         raise RuntimeError(container_id)
 

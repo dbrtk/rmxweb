@@ -56,3 +56,17 @@ def get_features(feats: int = 10,
         }
     ).get()
     return features, docs
+
+
+@celery.task
+def compute_features(
+        feats: int = 10,
+        words: int = 6,
+        containerid: int = None,
+        path: str = None,
+        docs_per_feat: int = 0,
+        feats_per_doc: int = 3):
+    """ Computing features on nlp. This will call a view method that will
+    generate the requested data. It is called on POST and PUT requests.
+    """
+    pass
