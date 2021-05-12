@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'data.apps.DataConfig',
     'home.apps.HomeConfig',
     'graph.apps.GraphConfig',
+    'feature.apps.FeatureConfig',
 ]
 
 MIDDLEWARE = [

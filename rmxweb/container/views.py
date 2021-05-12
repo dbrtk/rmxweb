@@ -155,11 +155,11 @@ class Features(APIView):
         docsperfeat: int = 5,
         featsperdoc: int = 3
 
-        :param request:
         :param containerid:
         :param words:
-        :param containerid:
-        :param format:
+        :param features:
+        :param docsperfeat:
+        :param featsperdoc:
         :return:
         """
         response = request_features(
@@ -194,15 +194,37 @@ class Features(APIView):
         pass
 
 
-class WebPages(APIView):
-    pass
-
-
-
-@feats_available
-def get_features(request):
-
-    return JsonResponse({'msg': 'features'})
+class Documents(APIView):
+    """ retrieve documents (web pages) with features.
+    """
+    @graph_request
+    def get(self, containerid: int = None, words: int = 10, features: int = 10,
+            docsperfeat: int = 5, featsperdoc: int = 3):
+        """
+        :param containerid:
+        :param words:
+        :param features:
+        :param docsperfeat:
+        :param featsperdoc:
+        :return:
+        """
+        response = request_features(
+            containerid=containerid,
+            feats=features,
+            words=words,
+            featsperdoc=featsperdoc,
+            docsperfeat=docsperfeat
+        )
+        return JsonResponse({
+            'data': response.get('docs'),
+            'params': {
+                'containerid': containerid,
+                'words': words,
+                'featsperdoc': featsperdoc,
+                'docsperfeat': docsperfeat,
+                'feats': features
+            },
+        })
 
 
 def test_celery(request, a, b):
