@@ -34,7 +34,6 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
     return crawlid
 
 
-@celery.task
 def get_features(feats: int = 10,
                  words: int = 6,
                  containerid: int = None,

@@ -1,6 +1,8 @@
 
 from functools import wraps
 
+from django.http import Http404, JsonResponse
+
 from .models import Container
 from rmxweb.celery import celery
 from rmxweb import config
@@ -62,3 +64,60 @@ def feats_available(func):
         out.update(availability)
         return out
     return wrapped_view
+
+
+def graph_request(func):
+    """Decorating view methods that contain a graph request."""
+
+    @wraps(func)
+    def wrapper(self, request, containerid: int = None, **kwargs):
+        """
+
+        request parameters:
+        containerid: int = None
+        words: int = 10
+        features: int = 10
+        dataforfeature: int = 5
+        featuresfordatum: int = 3
+
+        :param self:
+        :param request:
+        :param containerid:
+        :return:
+        """
+        params = request.GET.dict()
+        if containerid is not None:
+            params['containerid'] = containerid
+        required = ['containerid', 'features']
+        structure = {
+            'containerid': int,
+            'words': int,
+            'features': int,
+            'data-for-feature': int,
+            'features-for-datum': int,
+            'graph-type': str,
+        }
+
+        if not all(_ in params for _ in required):
+            return JsonResponse({
+                'error': True, 'prams': params,
+                'expected': list(structure.keys())
+            })
+        for k, v in params.items():
+            try:
+                params[k] = int(v)
+                _ = structure[k]
+            except (ValueError, KeyError):
+                return JsonResponse({
+                    'error': True, 'key': k, 'value': v, 'params': params,
+                    'expected': list(structure.keys())
+                })
+        return func(
+            self,
+            containerid=params.get('containerid'),
+            words=params.get('words', 20),
+            features=params.get('features', 10),
+            docsperfeat=params.get('data-for-feature', 5),
+            featsperdoc=params.get('features-for-datum', 3)
+        )
+    return wrapper

@@ -5,7 +5,7 @@ from rest_framework.views import APIView
 
 from .data import request_features, graph
 from data.serializers import DatasetSerializer
-from .decorators import feats_available
+from .decorators import feats_available, graph_request
 from .emit import compute_features, crawl_async
 from .models import Container
 from .serializers import ContainerSerializer
@@ -143,7 +143,9 @@ class FeaturesList(APIView):
 class Features(APIView):
     """Returns a specific feature defined by the features number."""
 
-    def get(self, request, containerid: int = None, format=None):
+    @graph_request
+    def get(self, containerid: int = None, words: int = 10, features: int = 10,
+            docsperfeat: int = 5, featsperdoc: int = 3):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -155,43 +157,27 @@ class Features(APIView):
 
         :param request:
         :param containerid:
+        :param words:
+        :param containerid:
         :param format:
         :return:
         """
-        params = request.GET.dict()
-        required = ['containerid', 'features']
-        params['containerid'] = containerid
-        structure = {
-            'containerid': int,
-            'words': int,
-            'features': int,
-            'docsperfeat': int,
-            'featsperdoc': int
-        }
-
-        if not all(_ in params for _ in required):
-            return JsonResponse({
-                'error': True, 'prams': params,
-                'expected': list(structure.keys())
-            })
-        for k, v in params.items():
-            try:
-                params[k] = int(v)
-                _ = structure[k]
-            except (ValueError, KeyError):
-                return JsonResponse({
-                    'error': True, 'key': k, 'value': value, 'params': params,
-                    'expected': list(structure.keys())
-                })
-        response = request_features(**params)
-
+        response = request_features(
+            containerid=containerid,
+            feats=features,
+            words=words,
+            featsperdoc=featsperdoc,
+            docsperfeat=docsperfeat
+        )
         return JsonResponse({
-            'containerid': containerid,
-            'data': response,
-            'words': params.get('words'),
-            'featsperdoc': params.get('featsperdoc'),
-            'docsperfeat': params.get('docsperfeat'),
-            'feats': params.get('features')
+            'data': response.get('features'),
+            'params': {
+                'containerid': containerid,
+                'words': words,
+                'featsperdoc': featsperdoc,
+                'docsperfeat': docsperfeat,
+                'feats': features
+            },
         })
 
     def post(self, request, containerid: int = None, feats: int = 10,
@@ -206,6 +192,10 @@ class Features(APIView):
     def delete(self, request, containerid: int = None, feats: int = 10, format=None):
         """Delete features for a given container."""
         pass
+
+
+class WebPages(APIView):
+    pass
 
 
 

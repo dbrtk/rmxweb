@@ -28,5 +28,7 @@ urlpatterns = [
     path('container/', include('container.urls')),
     path('data/', include('data.urls')),
 
+    path('graph/', include('graph.urls')),
+
     # path(r'graphql/', GraphQLView.as_view(graphiql=True)),
 ]
