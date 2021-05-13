@@ -42,7 +42,6 @@ def hierarchical_tree(containerid: (int, str) = None, feats: int = None,
     """
     :param containerid:
     :param feats:
-    :param path:
     :param flat:
     :return:
     """

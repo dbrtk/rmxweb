@@ -90,6 +90,13 @@ class Container(models.Model):
     @property
     def wf_path(self): return os.path.join(self.matrix_path, 'wf')
 
+    @property
+    def containeruid(self):
+        """Returns the container id which is shared across other services while
+        crawling, generating matrices, extracting features.
+        """
+        return self.uid.hex
+
     def get_dataids(self):
         """Returns the data ids. This method queries the data_set, Data objects
            associated with this container.
@@ -133,12 +140,6 @@ class Container(models.Model):
                 config.CONTAINER_ROOT, str(self.pk)  # self.uid.hex
             )
         ))
-
-    def get_containerid(self):
-        """Returns the container id which is shared across other services while
-        crawling, generating matrices, extracting features.
-        """
-        return self.uid.hex
 
     def get_vectors_path(self):
         """ Returns the path of the file that contains the vectors. """

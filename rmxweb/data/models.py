@@ -109,7 +109,7 @@ class Data(models.Model):
             container = Container.get_object(containerid)
 
         return os.path.normpath(
-            os.path.join(container.container_path(), self.file_id.hex)
+            os.path.join(container.container_path(), self.dataid)
         )
 
     def write_data_to_file(self, path, data) -> (str, str):

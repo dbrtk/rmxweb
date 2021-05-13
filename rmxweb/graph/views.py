@@ -1,10 +1,11 @@
 
 import time
+import uuid
 
 from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 
-from container.data import graph
+from .data import graph
 from container.decorators import graph_request
 from container.models import Container
 from .emit import get_features, hierarchical_tree, search_texts
@@ -90,7 +91,7 @@ class Dendogram(APIView):
                 continue
             try:
                 rec = next(
-                    _ for _ in dataset if _.file_id.hex == item['fileid']
+                    _ for _ in dataset if _.dataid == item['fileid']
                 )
             except StopIteration:
                 continue
@@ -164,9 +165,16 @@ def get_context(request):
         highlight=highlight,
         words=matchwords
     )
+    data_objs = {
+        _.dataid: {'title': _.title, 'url': _.url}
+        for _ in container.data_set.filter(
+            file_id__in=list(uuid.UUID(_) for _ in data['data'].keys())
+        )
+    }
     return JsonResponse({
         'success': True,
         'data': data.get('data'),
+        'documents': data_objs,
         'lemma': lemma,
         'words': matchwords,
     })

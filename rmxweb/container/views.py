@@ -164,7 +164,7 @@ class Features(APIView):
         """
         response = request_features(
             containerid=containerid,
-            feats=features,
+            features=features,
             words=words,
             featsperdoc=featsperdoc,
             docsperfeat=docsperfeat
