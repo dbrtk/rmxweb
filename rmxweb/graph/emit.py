@@ -1,6 +1,9 @@
 
+
+import typing
+
 from rmxweb.celery import celery
-from rmxweb.config import NLP_TASKS
+from rmxweb.config import NLP_TASKS, RMXGREP_TASK
 
 
 def get_features(containerid: (int, str), feats: int, path: str):
@@ -17,12 +20,25 @@ def get_features(containerid: (int, str), feats: int, path: str):
     ).get()
 
 
-def search_texts():
-    pass
+def search_texts(words: typing.List[str] = None, highlight: bool = None,
+                 path: str = None) -> dict:
+    """ Searching a collection of texts for a list of words.
+    :param words:
+    :param highlight:
+    :param path:
+    :return:
+    """
+    return celery.send_task(
+        RMXGREP_TASK['search_text'],
+        kwargs={
+            'highlight': highlight,
+            'words': words,
+            'container_path': path,
+        }).get()
 
 
 def hierarchical_tree(containerid: (int, str) = None, feats: int = None,
-                      path: str = None, flat: bool = False) -> dict:
+                      flat: bool = False) -> dict:
     """
     :param containerid:
     :param feats:

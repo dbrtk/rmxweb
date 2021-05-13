@@ -3,9 +3,9 @@ from django.http import Http404, JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .data import request_features, graph
+from .data import request_features
 from data.serializers import DatasetSerializer
-from .decorators import feats_available, graph_request
+from .decorators import graph_request
 from .emit import compute_features, crawl_async
 from .models import Container
 from .serializers import ContainerSerializer
@@ -145,7 +145,7 @@ class Features(APIView):
 
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3):
+            docsperfeat: int = 5, featsperdoc: int = 3, **_):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -199,7 +199,7 @@ class Documents(APIView):
     """
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3):
+            docsperfeat: int = 5, featsperdoc: int = 3, **_):
         """
         :param containerid:
         :param words:

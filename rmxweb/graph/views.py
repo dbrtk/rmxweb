@@ -7,9 +7,7 @@ from rest_framework.views import APIView
 from container.data import graph
 from container.decorators import graph_request
 from container.models import Container
-from .emit import get_features, hierarchical_tree
-from rmxweb.celery import celery
-from rmxweb.config import RMXGREP_TASK
+from .emit import get_features, hierarchical_tree, search_texts
 
 
 class Graph(APIView):
@@ -17,7 +15,7 @@ class Graph(APIView):
 
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3):
+            docsperfeat: int = 5, featsperdoc: int = 3, **_):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -53,16 +51,15 @@ class Dendogram(APIView):
     """ Returns the dataset for the hierarchical tree / dendogram.
     """
     @graph_request
-    def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3, flat: bool = True):
+    def get(self,
+            containerid: int = None,
+            features: int = 10,
+            flat: bool = True, **_):
         """
         Returns the hierarchical tree that can be used to display a dendogram
         or radial, circular dendogram.
         :param containerid:
-        :param words:
         :param features:
-        :param docsperfeat:
-        :param featsperdoc:
         :param flat:
         :return:
         """
@@ -100,6 +97,7 @@ class Dendogram(APIView):
             else:
                 item['url'] = rec.url
                 item['title'] = rec.title
+        data.reverse()
         return data
 
 
@@ -151,7 +149,7 @@ def get_context(request):
     except (ValueError, KeyError, TypeError) as _:
         raise Http404(params)
 
-    highlight = params.get('highlight', True)
+    highlight = params.get('highlight', False)
 
     lemma_to_words, lemma = container.get_lemma_words(lemma)
     matchwords = []
@@ -161,15 +159,14 @@ def get_context(request):
             matchwords.extend(mapping.get('words'))
         except StopIteration:
             matchwords.append(i)
-
-    data = celery.send_task(
-        RMXGREP_TASK['search_text'],
-        kwargs={
-            'highlight': highlight,
-            'words': matchwords,
-            'container_path': container.container_path()
-        }).get()
+    data = search_texts(
+        path=container.container_path(),
+        highlight=highlight,
+        words=matchwords
+    )
     return JsonResponse({
         'success': True,
-        'data': data.get('data')
+        'data': data.get('data'),
+        'lemma': lemma,
+        'words': matchwords,
     })
