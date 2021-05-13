@@ -11,6 +11,8 @@ urlpatterns = [
 
     path('<int:containerid>/features/', views.Features.as_view()),
 
+    path('<int:containerid>/documents/', views.Documents.as_view()),
+
     # path('<int:containerid>/features/', views.FeaturesList.as_view()),
 
     # path('<int:containerid>/features/<int:feats>/<int:featsperdoc>/<int:docsperfeat>/',

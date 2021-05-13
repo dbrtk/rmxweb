@@ -1,5 +1,8 @@
 
+
 from functools import wraps
+import json
+from json.decoder import JSONDecodeError
 
 from django.http import Http404, JsonResponse
 
@@ -95,7 +98,7 @@ def graph_request(func):
             'features': int,
             'data-for-feature': int,
             'features-for-datum': int,
-            'graph-type': str,
+            'flat': bool,
         }
 
         if not all(_ in params for _ in required):
@@ -105,12 +108,14 @@ def graph_request(func):
             })
         for k, v in params.items():
             try:
-                params[k] = int(v)
-                _ = structure[k]
-            except (ValueError, KeyError):
+                if structure[k] is int:
+                    params[k] = int(v)
+                elif structure[k] is bool:
+                    params[k] = json.loads(v)
+            except (ValueError, KeyError, JSONDecodeError):
                 return JsonResponse({
                     'error': True, 'key': k, 'value': v, 'params': params,
-                    'expected': list(structure.keys())
+                    'accepted': list(structure.keys())
                 })
         return func(
             self,
@@ -118,6 +123,7 @@ def graph_request(func):
             words=params.get('words', 20),
             features=params.get('features', 10),
             docsperfeat=params.get('data-for-feature', 5),
-            featsperdoc=params.get('features-for-datum', 3)
+            featsperdoc=params.get('features-for-datum', 3),
+            flat=params.get('flat', True),
         )
     return wrapper

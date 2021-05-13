@@ -312,6 +312,14 @@ class Container(models.Model):
             dicts = [_[0] for _ in re.findall(pattern, content)]
             return map(json.loads, dicts), lemma_list
 
+    def feature_words(self, feats: int = None):
+        """
+
+        :param feats:
+        :return:
+        """
+        pass
+
 
 class CrawlStatus(models.Model):
 

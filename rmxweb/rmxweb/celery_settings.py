@@ -117,6 +117,9 @@ NLP_TASKS = {
 
     'kmeans_files': 'nlp.task.kmeans_files',
 
+    'retrieve_features': 'nlp.task.retrieve_features',
+
+    'hierarchical_tree': 'nlp.task.hierarchical_tree',
 }
 
 RMXGREP_TASK = {
