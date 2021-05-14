@@ -1,4 +1,5 @@
 
+import json
 import time
 import uuid
 
@@ -51,29 +52,36 @@ class Graph(APIView):
 class Dendogram(APIView):
     """ Returns the dataset for the hierarchical tree / dendogram.
     """
-    @graph_request
-    def get(self,
-            containerid: int = None,
-            features: int = 10,
-            flat: bool = True, **_):
+    def get(self, request):
         """
         Returns the hierarchical tree that can be used to display a dendogram
         or radial, circular dendogram.
-        :param containerid:
-        :param features:
-        :param flat:
+        :param request:
         :return:
         """
-        resp = hierarchical_tree(
-            containerid=containerid, feats=features, flat=flat)
-        data = resp.get('data')
-        if resp.get('flat'):
-            data = self.process_flat_data(containerid, data)
-        return JsonResponse({
-            'data': data,
+        params = request.GET.dict()
+        flat = json.loads(params.get('flat', False))
+        try:
+            containerid = int(params.get('containerid'))
+        except (ValueError, TypeError):
+            raise Http404(params)
+        if not isinstance(flat, bool):
+            raise Http404(params)
+
+        resp = hierarchical_tree(containerid=containerid, flat=flat)
+        out = {
             'containerid': containerid,
-            'feats': features,
-        })
+            'success': False,
+        }
+        if 'data' in resp:
+            data = resp.get('data')
+            if resp.get('flat'):
+                data = self.process_flat_data(containerid, data)
+            out['data'] = data
+            out['success'] = True
+        else:
+            out['response'] = resp
+        return JsonResponse(out)
 
     def process_flat_data(self, containerid, data):
         """
@@ -104,7 +112,8 @@ class Dendogram(APIView):
 
 def list_features(request):
     """ This lists n features for a given containerid and a features number
-    (n). It is a helper to get all the lemma computed on a container.
+    (n). It is a helper to get all the features and lemma computed on a
+    container.
     :param request:
     :return:
     """

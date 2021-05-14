@@ -29,7 +29,7 @@ def feats_available(func):
     @wraps(func)
     def wrapped_view(containerid: int = None, words: int = 10,
                      features: int = 10, docsperfeat: int = 5,
-                     featsperdoc: int = 3):
+                     featsperdoc: int = 3, **kwds):
 
         container = Container.get_object(pk=containerid)
         availability = container.features_availability(feature_number=features)
@@ -45,13 +45,15 @@ def feats_available(func):
             return out
 
         if availability.get('available'):
-            return func({
+            out = {
                 'words': words,
                 'feats': features,
                 'docs_per_feat': docsperfeat,
                 'feats_per_doc': featsperdoc,
-                'container': container
-            })
+                'container': container,
+            }
+            out.update(kwds)
+            return func(out)
 
         celery.send_task(
             config.RMXWEB_TASKS['generate_matrices_remote'],
@@ -98,7 +100,6 @@ def graph_request(func):
             'features': int,
             'data-for-feature': int,
             'features-for-datum': int,
-            'flat': bool,
         }
 
         if not all(_ in params for _ in required):

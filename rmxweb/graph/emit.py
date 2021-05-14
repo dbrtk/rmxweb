@@ -2,6 +2,7 @@
 
 import typing
 
+from container.decorators import feats_available
 from rmxweb.celery import celery
 from rmxweb.config import NLP_TASKS, RMXGREP_TASK
 
@@ -37,16 +38,13 @@ def search_texts(words: typing.List[str] = None, highlight: bool = None,
         }).get()
 
 
-def hierarchical_tree(containerid: (int, str) = None, feats: int = None,
-                      flat: bool = False) -> dict:
+@feats_available
+def hierarchical_tree(reqobj: dict) -> dict:
     """
-    :param containerid:
-    :param feats:
-    :param flat:
+    :param reqobj:
     :return:
     """
     return celery.send_task(NLP_TASKS['hierarchical_tree'], kwargs={
-        'containerid': containerid,
-        'feats': feats,
-        'flat': flat
-    }).get()
+        'containerid': reqobj['container'].pk,
+        'flat': reqobj['flat'],
+    }).get(timeout=60)
