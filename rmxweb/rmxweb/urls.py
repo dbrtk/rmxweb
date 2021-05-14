@@ -15,6 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from graphene_django.views import GraphQLView
 
 from home import views as home_views
 
@@ -28,4 +29,6 @@ urlpatterns = [
     path('data/', include('data.urls')),
 
     path('graph/', include('graph.urls')),
+
+    path(r'graphql/', GraphQLView.as_view(graphiql=True)),
 ]
