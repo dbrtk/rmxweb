@@ -76,7 +76,7 @@ class ContainerRecord(APIView):
         data_serializer = DatasetSerializer(container.data_set.all(), many=True)
         dataset = data_serializer.data
         return JsonResponse({
-            'dataset': data_serializer.data,
+            'dataset': dataset,
             'dataset_length': len(dataset),
             'container': container_serializer.data,
             'containerid': pk})

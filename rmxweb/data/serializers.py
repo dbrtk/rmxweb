@@ -11,3 +11,12 @@ class DatasetSerializer(serializers.ModelSerializer):
         model = models.Data
         fields = ['pk', 'created', 'updated', 'url', 'seed', 'hostname',
                   'title', 'file_id', 'hash_text', 'container_id']
+
+
+class LinksSerializer(serializers.ModelSerializer):
+    """
+
+    """
+    class Meta:
+        model = models.Link
+        fields = ['pk', 'created', 'url', 'hostname']

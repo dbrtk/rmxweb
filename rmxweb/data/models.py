@@ -48,8 +48,8 @@ class Data(models.Model):
     def get_object(cls, pk: int = None):
         """Retrieves an object for a given pk."""
         try:
-            obj = cls.objects.get(containerid=pk)
-        except cls.DoesNoExist as _:
+            obj = cls.objects.get(pk=pk)
+        except cls.DoesNotExist as _:
             raise ValueError(
                 f"Data object with pk: `{pk}` doesn't exist."
             )
@@ -99,12 +99,12 @@ class Data(models.Model):
             Link.create(url=item, data=obj)
         return obj
 
-    def get_file_path(self, containerid: str = None,
-                      container: Container = None):
+    def get_file_path(self, container: Container = None):
         """
         Returns the path of the file as it is saved on disk
         :return:
         """
+        containerid = self.container.pk
         if not container:
             container = Container.get_object(containerid)
 
@@ -132,6 +132,16 @@ class Data(models.Model):
     def get_all_links(self):
         """Returns all the links for a given container id."""
         return self.link_set.all()
+
+    def get_text(self):
+        """Retrieves the text from the file save don disk.
+        :return:
+        """
+        out = []
+        with open(self.get_file_path(), 'r') as _file:
+            for line in _file.readlines():
+                out.append(line)
+        return out
 
     @classmethod
     def delete_many(cls, data_ids: typing.List[int], containerid: int = None):
@@ -170,8 +180,9 @@ class Link(models.Model):
         :param data:
         :return:
         """
-        url = urllib.parse.urlparse(url)
-        cls(url=url, hostname=url.hostname, data=data).save()
+        cls(url=url,
+            hostname=urllib.parse.urlparse(url).hostname,
+            data=data).save()
 
 
 def create_data_obj(container_id: int = None,

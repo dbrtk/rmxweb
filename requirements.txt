@@ -1,6 +1,4 @@
 django
-graphene-django
-
 djangorestframework
 markdown
 django-filter
@@ -15,5 +13,3 @@ requests
 gunicorn
 
 psycopg2-binary
-
-remote-pdb
