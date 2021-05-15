@@ -341,6 +341,7 @@ class FeaturesStatus(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     containerid = models.IntegerField(null=True)
+    computing_dendrogram = models.BooleanField(default=False)
 
     # container = models.ForeignKey(Container, on_delete=models.CASCADE)
     # type = models.CharField(max_length=50, default='features')
@@ -382,3 +383,44 @@ class FeaturesStatus(models.Model):
     def del_status_feats(cls, containerid: int = None, feats: int = None):
 
         cls.objects.filter(containerid=containerid, feats=feats).delete()
+
+    @classmethod
+    def get_status_dendrogram(cls, containerid):
+        """Returns the record for the dendrogram status."""
+        try:
+            obj = cls.objects.filter(
+                containerid=containerid, computing_dendrogram=True)
+        except cls.DoesNotExist as _:
+            return
+        return obj
+
+    @classmethod
+    def set_status_dendrogram(cls, containerid):
+        """Creating up a record for the process that computes the dendrogram.
+        """
+        obj = cls.get_status_dendrogram(containerid)
+        if obj:
+            return obj
+        else:
+            obj = cls(
+                containerid=containerid,
+                computing_dendrogram=True,
+                busy=True
+            )
+            obj.save()
+        return obj
+
+    @classmethod
+    def del_status_dendrogram(cls, containerid):
+
+        cls.objects.filter(
+            containerid=containerid, computing_dendrogram=True).delete()
+
+    @classmethod
+    def computing_dendrogram_busy(cls, containerid: int = None):
+        """Returns true if the dendrogram is currently computed."""
+        status = cls.get_status_dendrogram(containerid)
+        if status:
+            return True
+        else:
+            return False

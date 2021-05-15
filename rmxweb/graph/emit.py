@@ -44,7 +44,10 @@ def hierarchical_tree(reqobj: dict) -> dict:
     :param reqobj:
     :return:
     """
-    return celery.send_task(NLP_TASKS['hierarchical_tree'], kwargs={
-        'containerid': reqobj['container'].pk,
+    container = reqobj.get('container')
+    resp = celery.send_task(NLP_TASKS['hierarchical_tree'], kwargs={
+        'containerid': container.pk,
         'flat': reqobj['flat'],
-    }).get(timeout=60)
+    }).get(timeout=3)
+
+    return resp

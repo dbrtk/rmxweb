@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 
 from .data import graph
 from container.decorators import graph_request
-from container.models import Container
+from container.models import Container, FeaturesStatus
 from .emit import get_features, hierarchical_tree, search_texts
 
 
@@ -49,38 +49,46 @@ class Graph(APIView):
         })
 
 
-class Dendogram(APIView):
-    """ Returns the dataset for the hierarchical tree / dendogram.
+class Dendrogram(APIView):
+    """ Returns the dataset for the hierarchical tree / dendrogram.
     """
     def get(self, request):
         """
-        Returns the hierarchical tree that can be used to display a dendogram
-        or radial, circular dendogram.
+        Returns the hierarchical tree that can be used to display a dendrogram
+        or radial, circular dendrogram.
         :param request:
         :return:
         """
         params = request.GET.dict()
-        flat = json.loads(params.get('flat', False))
+        flat = params.get('flat')
+        if flat:
+            flat = json.loads(flat)
+        else:
+            flat = True
         try:
             containerid = int(params.get('containerid'))
         except (ValueError, TypeError):
             raise Http404(params)
         if not isinstance(flat, bool):
             raise Http404(params)
-
-        resp = hierarchical_tree(containerid=containerid, flat=flat)
         out = {
             'containerid': containerid,
             'success': False,
         }
-        if 'data' in resp:
-            data = resp.get('data')
-            if resp.get('flat'):
-                data = self.process_flat_data(containerid, data)
-            out['data'] = data
-            out['success'] = True
+        if FeaturesStatus.computing_dendrogram_busy(containerid):
+            out['msg'] = 'The dendrogram is currently being computed.'
+            out['busy'] = True
         else:
-            out['response'] = resp
+            resp = hierarchical_tree(containerid=containerid, flat=flat)
+            data = resp.get('data')
+            if data:
+                if resp.get('flat'):
+                    data = self.process_flat_data(containerid, data)
+                out['data'] = data
+                out['length'] = len(data)
+                out['success'] = True
+            else:
+                out['response'] = resp
         return JsonResponse(out)
 
     def process_flat_data(self, containerid, data):
@@ -106,6 +114,7 @@ class Dendogram(APIView):
             else:
                 item['url'] = rec.url
                 item['title'] = rec.title
+                item['pk'] = rec.pk
         data.reverse()
         return data
 

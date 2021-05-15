@@ -96,6 +96,7 @@ class ContainerRecord(APIView):
         if not isinstance(crawl, bool):
             raise ValueError(request.data)
         container = Container.get_object(pk=pk)
+        container.set_crawl_ready(value=False)
         resp = {}
 
         if the_name:

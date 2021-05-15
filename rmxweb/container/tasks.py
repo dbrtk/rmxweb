@@ -299,3 +299,15 @@ def test_task(a: int = None, b: int = None) -> dict:
     return {
         'sum': a + b
     }
+
+
+@celery.task
+def compute_dendrogram(containerid: int = None):
+    """Called when NLP starts computing the dendrogram."""
+    FeaturesStatus.set_status_dendrogram(containerid=containerid)
+
+
+@celery.task
+def compute_dendrogram_callback(containerid: int = None):
+    """Called when the dendrogram is computed."""
+    FeaturesStatus.del_status_dendrogram(containerid=containerid)
