@@ -12,6 +12,8 @@ class ListData(APIView):
         """Retrieves a list of Data objects for a given containerid."""
         params = request.GET.dict()
         containerid = int(params.get('containerid'))
+        if not containerid:
+            raise Http404(f'A containerid is required. Params: {params}')
         data_objs = Data.objects.filter(container__pk=containerid)
         data_serializer = DatasetSerializer(data_objs, many=True)
         dataset = data_serializer.data
