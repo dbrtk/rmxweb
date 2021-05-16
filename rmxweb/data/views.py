@@ -7,12 +7,13 @@ from .serializers import DatasetSerializer, LinksSerializer
 
 
 class ListData(APIView):
-    """View that lists all data objects for a given container id."""
+    """This view class lists all data objects for a given container id."""
     def get(self, request):
         """Retrieves a list of Data objects for a given containerid."""
         params = request.GET.dict()
-        containerid = int(params.get('containerid'))
-        if not containerid:
+        try:
+            containerid = int(params.get('containerid'))
+        except (TypeError, ValueError) as _:
             raise Http404(f'A containerid is required. Params: {params}')
         data_objs = Data.objects.filter(container__pk=containerid)
         data_serializer = DatasetSerializer(data_objs, many=True)
