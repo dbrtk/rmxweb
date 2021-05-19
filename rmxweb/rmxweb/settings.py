@@ -24,7 +24,8 @@ SECRET_KEY = 'django-insecure-+qg)02zhspk1g!p6mpwo&5v188*=6h^zm)t+onqhsjceg0c8oy
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', os.environ.get('DOCKER_HOST_NAME')]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', os.environ.get('DOCKER_HOST_NAME'),
+                 'rmxweb']
 
 # Application definition
 

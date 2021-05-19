@@ -11,5 +11,6 @@ redis
 requests
 
 gunicorn
+uwsgi
 
 psycopg2-binary

@@ -50,8 +50,6 @@ class ContainerList(APIView):
                 'crawl': crawl,
             },
             'crawlid': crawlid,
-            'rpc_queues': config.RPC_PUBLISH_QUEUES,
-            'post': request.data
         })
 
 
