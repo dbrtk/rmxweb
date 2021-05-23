@@ -76,7 +76,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rmxweb.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 # this database can be used for testing

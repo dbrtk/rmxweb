@@ -280,7 +280,8 @@ class Container(models.Model):
         return self.features_to_json(features, data_set), \
             self.docs_to_json(docs, data_set)
 
-    def features_to_json(self, features, data_set):
+    @staticmethod
+    def features_to_json(features, data_set):
         """ Mapping a list of given docs to feature's doc. """
         for _ftr in features:
             for _doc in _ftr.get('docs'):
@@ -290,7 +291,8 @@ class Container(models.Model):
                 _doc['url'] = _.url
         return features
 
-    def docs_to_json(self, docs, data_set):
+    @staticmethod
+    def docs_to_json(docs, data_set):
         """
         """
         for doc in docs:
@@ -424,3 +426,27 @@ class FeaturesStatus(models.Model):
             return True
         else:
             return False
+
+    @classmethod
+    def computing_feats_busy(cls, containerid: int, feats: int) -> bool:
+        """
+
+        :param containerid:
+        :param feats:
+        :return:
+        """
+        status = cls.get_status_feats(containerid=containerid, feats=feats)
+        if status:
+            return True
+        else:
+            return False
+
+    @classmethod
+    def container_busy(cls, containerid: int = None):
+        """
+
+        :param containerid:
+        :return:
+        """
+        return cls.objects.filter(containerid=containerid)
+

@@ -6,8 +6,8 @@ import uuid
 from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
 
-from .data import graph
-from container.decorators import graph_request
+from .data import graph, graph_to_csv, GraphCSV
+from container.decorators import feats_available, graph_request
 from container.models import Container, FeaturesStatus
 from .emit import get_features, hierarchical_tree, search_texts
 
@@ -34,10 +34,7 @@ class Graph(APIView):
         :param featsperdoc:
         :return:
         """
-        out = graph(containerid=containerid, words=words, features=features,
-                    featsperdoc=featsperdoc, docsperfeat=docsperfeat)
-        return JsonResponse({
-            'msg': 'response from graph getter',
+        out = {
             'params': {
                 'containerid': containerid,
                 'words': words,
@@ -45,8 +42,22 @@ class Graph(APIView):
                 'docsperfeat': docsperfeat,
                 'featsperdoc': featsperdoc,
             },
-            'graph': out,
-        })
+        }
+        if FeaturesStatus.computing_feats_busy(containerid, features):
+            out.update({
+                'retry': True,
+                'busy': True,
+                'success': False,
+            })
+        else:
+            out['success'] = True
+            out['data'] = GraphCSV(
+                containerid=containerid, words=words, features=features,
+                featsperdoc=featsperdoc, docsperfeat=docsperfeat)
+            # out['data'] = graph_to_csv(
+            #     containerid=containerid, words=words, features=features,
+            #     featsperdoc=featsperdoc, docsperfeat=docsperfeat)
+        return JsonResponse(out)
 
 
 class Dendrogram(APIView):
