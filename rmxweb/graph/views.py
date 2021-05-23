@@ -51,12 +51,9 @@ class Graph(APIView):
             })
         else:
             out['success'] = True
-            out['data'] = GraphCSV(
+            out['data'] = graph(
                 containerid=containerid, words=words, features=features,
                 featsperdoc=featsperdoc, docsperfeat=docsperfeat)
-            # out['data'] = graph_to_csv(
-            #     containerid=containerid, words=words, features=features,
-            #     featsperdoc=featsperdoc, docsperfeat=docsperfeat)
         return JsonResponse(out)
 
 
@@ -138,24 +135,25 @@ def list_features(request):
     :return:
     """
     params = request.GET.dict()
-    feats = 10
     try:
         containerid = int(params['containerid'])
         container = Container.get_object(pk=containerid)
-        if 'features' in params:
-            feats = int(params['features'])
+        feats = int(params.get('features', 10))
+        words = int(params.get('words', 10))
     except (ValueError, KeyError, TypeError) as _:
         raise Http404(params)
 
-    start = time.time()
-    out = get_features(containerid=containerid, feats=feats,
+    out = get_features(containerid=containerid, feats=feats, words=words,
                        path=container.get_folder_path())
+    if not out:
+        raise Http404(params)
     lemma = [','.join(_['word'] for _ in item) for item in out]
-    end = time.time()
     return JsonResponse({
+        'containerid': containerid,
+        'feature_count': feats,
+        'word_count': words,
         'features': out,
         'lemma_str': lemma,
-        'time': end - start,
     })
 
 
@@ -171,7 +169,10 @@ def get_context(request):
     :param request:
     :return:
     """
-    params = request.GET.dict()
+    params = request.GET.dict() or json.loads(request.body)
+
+    if not params:
+        raise Http404
     try:
         containerid = int(params['containerid'])
         container = Container.get_object(pk=containerid)

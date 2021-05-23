@@ -7,17 +7,22 @@ from rmxweb.celery import celery
 from rmxweb.config import NLP_TASKS, RMXGREP_TASK
 
 
-def get_features(containerid: (int, str), feats: int, path: str):
+def get_features(containerid: (int, str), feats: int, words: int, path: str):
     """
-
     :param containerid:
     :param feats:
+    :param words:
     :param path:
     :return:
     """
     return celery.send_task(
         NLP_TASKS['retrieve_features'],
-        kwargs={'containerid': containerid, 'feats': feats, 'path': path}
+        kwargs={
+            'containerid': containerid,
+            'feats': feats,
+            'path': path,
+            'words': words
+        }
     ).get()
 
 

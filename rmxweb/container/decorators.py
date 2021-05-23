@@ -4,7 +4,7 @@ from functools import wraps
 import json
 from json.decoder import JSONDecodeError
 
-from django.http import Http404, JsonResponse
+from django.http import JsonResponse
 
 from .models import Container
 from rmxweb.celery import celery
