@@ -32,7 +32,9 @@ def feats_available(func):
                      featsperdoc: int = 3, **kwds):
 
         container = Container.get_object(pk=containerid)
+        print(f'\n\navailable feats; container: {container}')
         availability = container.features_availability(feature_number=features)
+        print(f'availability: {availability}')
         out = {
             'busy': True,
             'retry': True,
@@ -42,8 +44,9 @@ def feats_available(func):
             'containerid': container.pk
         }
         if availability.get('busy'):
+            print(f'return is busy: {out}')
             return out
-
+        print(f"is not busy; is available: {availability.get('available')}")
         if availability.get('available'):
             out = {
                 'words': words,
@@ -53,8 +56,10 @@ def feats_available(func):
                 'container': container,
             }
             out.update(kwds)
+            print(f'is available, out: {out}')
+            print(f'the function being returned: {func}')
             return func(out)
-
+        print(f'CALLING RMXWEB_TASKS[\'generate_matrices_remote\']')
         celery.send_task(
             config.RMXWEB_TASKS['generate_matrices_remote'],
             kwargs={
@@ -100,6 +105,7 @@ def graph_request(func):
             'features': int,
             'data-for-feature': int,
             'features-for-datum': int,
+            'type': str,
         }
 
         if not all(_ in params for _ in required):

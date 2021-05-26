@@ -3,13 +3,14 @@ import json
 import time
 import uuid
 
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from rest_framework.views import APIView
 
-from .data import graph, graph_to_csv, GraphCSV
+from .data import graph, graph_to_csv
 from container.decorators import feats_available, graph_request
 from container.models import Container, FeaturesStatus
 from .emit import get_features, hierarchical_tree, search_texts
+from rmxweb.config import OUTPUT_TYPE_JSON
 
 
 class Graph(APIView):
@@ -17,7 +18,7 @@ class Graph(APIView):
 
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3, **_):
+            docsperfeat: int = 0, featsperdoc: int = 3, **_):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -49,12 +50,22 @@ class Graph(APIView):
                 'busy': True,
                 'success': False,
             })
-        else:
-            out['success'] = True
+            return JsonResponse(out)
+        out['success'] = True
+
+        # todo(): get rid of json responses.
+        if OUTPUT_TYPE_JSON:
             out['data'] = graph(
                 containerid=containerid, words=words, features=features,
                 featsperdoc=featsperdoc, docsperfeat=docsperfeat)
-        return JsonResponse(out)
+            return JsonResponse(out)
+        obj = graph_to_csv(
+            containerid=containerid, words=words, features=features,
+            featsperdoc=featsperdoc, docsperfeat=docsperfeat)
+        resp = HttpResponse(
+            obj.get_zip(), content_type='application/force-download')
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        return resp
 
 
 class Dendrogram(APIView):

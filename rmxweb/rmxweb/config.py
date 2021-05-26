@@ -76,3 +76,7 @@ RMXCLUSTER_TASKS = celery_settings.RMXCLUSTER_TASKS
 # hexdigest size
 DIGEST_SIZE = 64
 HEXDIGEST_SIZE = 128
+
+
+# the type of data to return to the client
+OUTPUT_TYPE_JSON = os.environ.get('OUTPUT_TYPE_JSON', False)

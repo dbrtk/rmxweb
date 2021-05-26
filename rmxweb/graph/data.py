@@ -7,6 +7,7 @@ import uuid
 import zipfile
 
 from container.decorators import feats_available
+from contrib.csv_zip import CsvZip
 
 
 @feats_available
@@ -80,7 +81,7 @@ def graph(reqobj):
     }
 
 
-class GraphCSV:
+class GraphCSV(CsvZip):
 
     EDGE_COLUMNS = ['source', 'target', 'weight']
     FEAT_COLUMNS = ['id', 'count']
@@ -89,11 +90,11 @@ class GraphCSV:
 
     def __init__(self, reqobj: dict):
 
+        super().__init__()
+
         self.container = reqobj.get('container')
         del reqobj['container']
-        print('get_features')
         self.features, self.docs = self.container.get_features(**reqobj)
-        print('features and docs returned')
 
         self.feat_nodes = []
 
@@ -103,13 +104,19 @@ class GraphCSV:
         self.word = []
 
     def __call__(self):
-        print('iter feats')
+
         self.iter_feats()
-        print('iter docs')
+
         self.iter_docs()
-        print('flatten feats')
+
         self.flatten_features()
-        return
+
+        self.write_to_zip(
+            self.get_feat(),
+            self.get_data(),
+            self.get_edge(),
+            self.get_word()
+        )
 
     def find_feat(self, feature):
 
@@ -123,7 +130,7 @@ class GraphCSV:
         while self.features:
             f = self.features.pop(0)
             f['id'] = uuid.uuid4().hex
-            print(f'the feat: {f}')
+
             # cleanup the feat object
             del f['docs']
             self.feat_nodes.append(f)
@@ -165,20 +172,6 @@ class GraphCSV:
                 feat_word['featureid'] = item['id']
                 self.word.append(feat_word)
 
-    @staticmethod
-    def to_csv(rows: typing.List,
-               file_name: str,
-               columns: typing.List[str]):
-
-        _file = io.StringIO()
-        writer = csv.DictWriter(_file, fieldnames=columns)
-        writer.writeheader()
-        writer.writerows(rows)
-        return {
-            'name': file_name,
-            'file': _file,
-        }
-
     def get_feat(self):
 
         return self.to_csv(
@@ -207,6 +200,17 @@ class GraphCSV:
             file_name='edge.csv',
             columns=self.EDGE_COLUMNS)
 
+    def config(self):
+
+        out = {
+            'columns': {
+                'edge': self.EDGE_COLUMNS,
+                'feat': self.FEAT_COLUMNS,
+                'word': self.WORD_COLUMNS,
+                'data': self.DATA_COLUMNS,
+            },
+        }
+
 
 @feats_available
 def graph_to_csv(reqobj):
@@ -226,11 +230,4 @@ def graph_to_csv(reqobj):
     """
     obj = GraphCSV(reqobj)
     obj()
-    memf = io.BytesIO()
-    with zipfile.ZipFile(
-            memf, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.write()
-
-
-    import pdb ; pdb.set_trace()
-
+    return obj
