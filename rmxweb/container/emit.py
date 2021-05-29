@@ -43,7 +43,7 @@ def get_features(feats: int = 10,
     """ Getting the features from nlp. This will call a view method that
         will retrieve or generate the requested data.
     """
-    features, docs = celery.send_task(
+    return celery.send_task(
         NLP_TASKS['features_and_docs'], kwargs={
             'path': path,
             'feats': feats,
@@ -53,7 +53,6 @@ def get_features(feats: int = 10,
             'feats_per_doc': feats_per_doc
         }
     ).get()
-    return features, docs
 
 
 @celery.task

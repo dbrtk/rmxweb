@@ -1,16 +1,15 @@
 
 import json
-import time
 import uuid
 
 from django.http import Http404, HttpResponse, JsonResponse
 from rest_framework.views import APIView
 
-from .data import graph, graph_to_csv
+from .data import get_graph
 from container.decorators import feats_available, graph_request
 from container.models import Container, FeaturesStatus
+from contrib.serialiser_factory import SerialiserFactory
 from .emit import get_features, hierarchical_tree, search_texts
-from rmxweb.config import OUTPUT_TYPE_JSON
 
 
 class Graph(APIView):
@@ -18,7 +17,8 @@ class Graph(APIView):
 
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 0, featsperdoc: int = 3, **_):
+            docsperfeat: int = 0, featsperdoc: int = 3, data_format: str = None,
+            **_):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -33,6 +33,7 @@ class Graph(APIView):
         :param features:
         :param docsperfeat:
         :param featsperdoc:
+        :param data_format:
         :return:
         """
         out = {
@@ -42,6 +43,7 @@ class Graph(APIView):
                 'features': features,
                 'docsperfeat': docsperfeat,
                 'featsperdoc': featsperdoc,
+                'data_format': data_format
             },
         }
         if FeaturesStatus.computing_feats_busy(containerid, features):
@@ -51,19 +53,26 @@ class Graph(APIView):
                 'success': False,
             })
             return JsonResponse(out)
-        out['success'] = True
+        serialiser_type = 'graph_csv' if data_format == 'csv' else 'graph_json'
+        import pdb;pdb.set_trace()
 
-        # todo(): get rid of json responses.
-        if OUTPUT_TYPE_JSON:
-            out['data'] = graph(
-                containerid=containerid, words=words, features=features,
-                featsperdoc=featsperdoc, docsperfeat=docsperfeat)
-            return JsonResponse(out)
-        obj = graph_to_csv(
+        try:
+            serialiser = SerialiserFactory().get_serialiser(serialiser_type)
+        except ValueError:
+            raise Http404(out)
+
+        out['success'] = True
+        data = get_graph(
             containerid=containerid, words=words, features=features,
-            featsperdoc=featsperdoc, docsperfeat=docsperfeat)
+            featsperdoc=featsperdoc, docsperfeat=docsperfeat
+        )
+        serialiser = serialiser(data)
+        if data_format is 'json':
+            return JsonResponse(serialiser.get_value())
         resp = HttpResponse(
-            obj.get_zip(), content_type='application/force-download')
+            serialiser.get_value(),
+            content_type='application/force-download'
+        )
         resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
         return resp
 

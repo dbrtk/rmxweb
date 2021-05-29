@@ -280,10 +280,11 @@ def request_features(reqobj):
     """
     container = reqobj.get('container')
     del reqobj['container']
-
-    features, docs = container.get_features(**reqobj)
+    features, words, docs, edges = container.get_features(**reqobj)
     return dict(
         success=True,
         features=features,
-        docs=docs
+        docs=docs,
+        edges=edges,
+        words=words
     )

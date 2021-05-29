@@ -263,7 +263,7 @@ class Container(models.Model):
         """ Getting the features from nlp. This will call a view method that
             will retrieve or generate the requested data.
         """
-        features, docs = get_features(**{
+        resp = get_features(**{
             'path': self.get_folder_path(),
             'feats': feats,
             'containerid': str(self.pk),
@@ -271,18 +271,29 @@ class Container(models.Model):
             'docs_per_feat': docs_per_feat,
             'feats_per_doc': feats_per_doc,
         })
-        features = sorted(
-            features,
-            key=lambda _: _.get('features')[0].get('weight'),
-            reverse=True
-        )
+        docs = resp['docs']
+        features = resp['features']
+        edges = resp['edges']
+        words = resp['feature_words']
         data_set = self.data_set.all()
-        return self.features_to_json(features, data_set), \
-            self.docs_to_json(docs, data_set)
+        docs = self.docs_to_json(docs, data_set)
+        return {
+            'features': features,
+            'words': words,
+            'docs': docs,
+            'edges': edges
+        }
+
+    def data_mapping(self):
+        """
+        :return:
+        """
+        raise NotImplemented()
 
     @staticmethod
     def features_to_json(features, data_set):
         """ Mapping a list of given docs to feature's doc. """
+        # todo(): delete this method - it duplicates documents.
         for _ftr in features:
             for _doc in _ftr.get('docs'):
                 _ = next(_ for _ in data_set if
@@ -299,7 +310,7 @@ class Container(models.Model):
             _ = next(_ for _ in data_set if _.dataid == doc.get('dataid'))
             doc['url'] = _.url
             doc['title'] = _.title
-            doc['fileid'] = _.dataid
+            doc['pk'] = _.pk
         return docs
 
     def get_lemma_words(self, lemma: (str, list) = None):

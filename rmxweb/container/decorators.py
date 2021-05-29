@@ -98,7 +98,7 @@ def graph_request(func):
             'features': int,
             'data-for-feature': int,
             'features-for-datum': int,
-            'type': str,
+            'format': str,
         }
 
         if not all(_ in params for _ in required):
@@ -117,6 +117,18 @@ def graph_request(func):
                     'error': True, 'key': k, 'value': v, 'params': params,
                     'accepted': list(structure.keys())
                 })
+        _format = params.get(format)
+        if _format:
+            if _format not in config.AVAILABLE_FORMATS:
+                return JsonResponse({
+                    'error': True,
+                    'key': 'format',
+                    'value': _format,
+                    'params': params,
+                    'accepted': config.AVAILABLE_FORMATS
+                })
+        else:
+            _format = 'csv'
         return func(
             self,
             containerid=params.get('containerid'),
@@ -125,5 +137,6 @@ def graph_request(func):
             docsperfeat=params.get('data-for-feature', 5),
             featsperdoc=params.get('features-for-datum', 3),
             flat=params.get('flat', True),
+            data_format=_format,
         )
     return wrapper

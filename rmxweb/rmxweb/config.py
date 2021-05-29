@@ -80,3 +80,6 @@ HEXDIGEST_SIZE = 128
 
 # the type of data to return to the client
 OUTPUT_TYPE_JSON = os.environ.get('OUTPUT_TYPE_JSON', False)
+
+# available data formats for http responses
+AVAILABLE_FORMATS = ['json', 'csv']
