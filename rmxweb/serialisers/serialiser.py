@@ -11,7 +11,7 @@ class Serialiser(abc.ABC):
     Converting lists of python dicts to csv datasets and writing these to
     zipfile.
     """
-    def __init__(self, data: (dict, list) = None):
+    def __init__(self, data: (dict, list) = None, **kwds):
         """
         A serialiser expects a dataset as input called `data`.
         :param data:

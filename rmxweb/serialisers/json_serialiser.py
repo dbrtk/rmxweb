@@ -9,11 +9,5 @@ class JsonSerialiser(Serialiser):
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.json = None
-        self.make_json()
 
-    def make_json(self):
-
-        self.json = json.dumps(self.data)
-
-    def get_value(self): return self.json
+    def get_value(self): return self.data

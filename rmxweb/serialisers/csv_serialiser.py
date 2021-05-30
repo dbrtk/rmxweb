@@ -19,10 +19,7 @@ class CsvSerialiser(Serialiser):
         _file = io.StringIO()
         writer = csv.DictWriter(_file, fieldnames=columns)
         writer.writeheader()
-        try:
-            writer.writerows(rows)
-        except ValueError:
-            import pdb;pdb.set_trace()
+        writer.writerows(rows)
         return {
             'name': file_name,
             'file': _file,

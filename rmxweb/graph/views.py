@@ -5,11 +5,12 @@ import uuid
 from django.http import Http404, HttpResponse, JsonResponse
 from rest_framework.views import APIView
 
-from .data import get_graph
 from container.decorators import feats_available, graph_request
 from container.models import Container, FeaturesStatus
-from contrib.serialiser_factory import SerialiserFactory
+from .data import get_graph
 from .emit import get_features, hierarchical_tree, search_texts
+from rmxweb import config
+from serialisers import SerialiserFactory
 
 
 class Graph(APIView):
@@ -17,8 +18,7 @@ class Graph(APIView):
 
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 0, featsperdoc: int = 3, data_format: str = None,
-            **_):
+            docsperfeat: int = 0, featsperdoc: int = 3, **_):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -42,10 +42,10 @@ class Graph(APIView):
                 'words': words,
                 'features': features,
                 'docsperfeat': docsperfeat,
-                'featsperdoc': featsperdoc,
-                'data_format': data_format
+                'featsperdoc': featsperdoc
             },
         }
+
         if FeaturesStatus.computing_feats_busy(containerid, features):
             out.update({
                 'retry': True,
@@ -53,9 +53,8 @@ class Graph(APIView):
                 'success': False,
             })
             return JsonResponse(out)
-        serialiser_type = 'graph_csv' if data_format == 'csv' else 'graph_json'
-        import pdb;pdb.set_trace()
-
+        serialiser_type = 'graph_json' if config.OUTPUT_TYPE_JSON \
+            else 'graph_csv'
         try:
             serialiser = SerialiserFactory().get_serialiser(serialiser_type)
         except ValueError:
@@ -67,7 +66,8 @@ class Graph(APIView):
             featsperdoc=featsperdoc, docsperfeat=docsperfeat
         )
         serialiser = serialiser(data)
-        if data_format is 'json':
+
+        if config.OUTPUT_TYPE_JSON:
             return JsonResponse(serialiser.get_value())
         resp = HttpResponse(
             serialiser.get_value(),
@@ -102,24 +102,45 @@ class Dendrogram(APIView):
         out = {
             'containerid': containerid,
             'success': False,
+            'params': params
         }
+        serialiser_type = 'dendrogram_json' if config.OUTPUT_TYPE_JSON \
+            else 'dendrogram_csv'
+        try:
+            serialiser = SerialiserFactory().get_serialiser(serialiser_type)
+        except ValueError:
+            raise Http404(out)
         if FeaturesStatus.computing_dendrogram_busy(containerid):
             out['msg'] = 'The dendrogram is currently being computed.'
             out['busy'] = True
-        else:
-            resp = hierarchical_tree(containerid=containerid, flat=flat)
-            data = resp.get('data')
-            if data:
-                if resp.get('flat'):
-                    data = self.process_flat_data(containerid, data)
-                out['data'] = data
-                out['length'] = len(data)
-                out['success'] = True
-            else:
-                out['response'] = resp
-        return JsonResponse(out)
+            return JsonResponse(out)
 
-    def process_flat_data(self, containerid, data):
+        resp = hierarchical_tree(containerid=containerid, flat=flat)
+
+        if not resp['success']:
+            # In this case, the system is busy or there is an issue.
+            out['response'] = resp
+            return JsonResponse(out)
+        branch = resp['branch']
+        leaf = resp['leaf']
+        leaf = self.prepare_data(containerid, leaf)
+        if config.OUTPUT_TYPE_JSON:
+            out['leaf'] = leaf
+            out['branch'] = branch
+            out['leaf_length'] = len(leaf)
+            out['branch_length'] = len(branch)
+            out['success'] = True
+            return JsonResponse(out)
+
+        serialiser = serialiser(data={'branch': branch, 'leaf': leaf})
+        resp = HttpResponse(
+            serialiser.get_value(),
+            content_type='application/force-download'
+        )
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        return resp
+
+    def prepare_data(self, containerid, data):
         """
         :param containerid:
         :param data:
@@ -131,8 +152,6 @@ class Dendrogram(APIView):
             raise Http404(containerid)
         dataset = list(container.data_set.all())
         for item in data:
-            if item['type'] == 'branch':
-                continue
             try:
                 rec = next(
                     _ for _ in dataset if _.dataid == item['fileid']
@@ -140,9 +159,11 @@ class Dendrogram(APIView):
             except StopIteration:
                 continue
             else:
+                del item['fileid']
                 item['url'] = rec.url
                 item['title'] = rec.title
                 item['pk'] = rec.pk
+                item['created'] = rec.created
         data.reverse()
         return data
 
@@ -215,16 +236,33 @@ def get_context(request):
         highlight=highlight,
         words=matchwords
     )
-    data_objs = {
-        _.dataid: {'title': _.title, 'url': _.url}
+
+    serialiser = SerialiserFactory().get_serialiser('search_text_csv')
+
+    data_objs = [
+        {
+            'title': _.title, 'url': _.url, 'pk': _.pk, 'dataid': _.dataid,
+            'created': _.created
+        }
         for _ in container.data_set.filter(
-            file_id__in=list(uuid.UUID(_) for _ in data['data'].keys())
+            file_id__in=list(uuid.UUID(_['dataid']) for _ in data['data'])
         )
-    }
-    return JsonResponse({
-        'success': True,
-        'data': data.get('data'),
-        'documents': data_objs,
-        'lemma': lemma,
-        'words': matchwords,
+    ]
+    serialiser = serialiser(data={
+        'docs': data_objs, 'response': data, 'lemma': lemma
     })
+    if config.OUTPUT_TYPE_JSON:
+        return JsonResponse({
+            'success': True,
+            'data': data.get('data'),
+            'documents': data_objs,
+            'lemma': lemma,
+            'words': matchwords,
+        })
+
+    resp = HttpResponse(
+        serialiser.get_value(),
+        content_type='application/force-download'
+    )
+    resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+    return resp

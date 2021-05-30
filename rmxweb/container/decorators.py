@@ -88,7 +88,7 @@ def graph_request(func):
         :param containerid:
         :return:
         """
-        params = request.GET.dict()
+        params = request.query_params.dict()
         if containerid is not None:
             params['containerid'] = containerid
         required = ['containerid', 'features']
@@ -100,10 +100,10 @@ def graph_request(func):
             'features-for-datum': int,
             'format': str,
         }
-
         if not all(_ in params for _ in required):
             return JsonResponse({
-                'error': True, 'prams': params,
+                'error': True,
+                'prams': params,
                 'expected': list(structure.keys())
             })
         for k, v in params.items():
@@ -117,7 +117,7 @@ def graph_request(func):
                     'error': True, 'key': k, 'value': v, 'params': params,
                     'accepted': list(structure.keys())
                 })
-        _format = params.get(format)
+        _format = params.get('format')
         if _format:
             if _format not in config.AVAILABLE_FORMATS:
                 return JsonResponse({
