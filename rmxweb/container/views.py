@@ -8,6 +8,7 @@ from data.serializers import DatasetSerializer
 from .decorators import graph_request
 from .emit import compute_features, crawl_async
 from .models import Container
+from serialisers import SerialiserFactory
 from .serializers import ContainerSerializer
 from rmxweb.celery import celery
 from rmxweb import config

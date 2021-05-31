@@ -168,36 +168,6 @@ class Dendrogram(APIView):
         return data
 
 
-def list_features(request):
-    """ This lists n features for a given containerid and a features number
-    (n). It is a helper to get all the features and lemma computed on a
-    container.
-    :param request:
-    :return:
-    """
-    params = request.GET.dict()
-    try:
-        containerid = int(params['containerid'])
-        container = Container.get_object(pk=containerid)
-        feats = int(params.get('features', 10))
-        words = int(params.get('words', 10))
-    except (ValueError, KeyError, TypeError) as _:
-        raise Http404(params)
-
-    out = get_features(containerid=containerid, feats=feats, words=words,
-                       path=container.get_folder_path())
-    if not out:
-        raise Http404(params)
-    lemma = [','.join(_['word'] for _ in item) for item in out]
-    return JsonResponse({
-        'containerid': containerid,
-        'feature_count': feats,
-        'word_count': words,
-        'features': out,
-        'lemma_str': lemma,
-    })
-
-
 def get_context(request):
     """ Returns the context for lemmatised feature words.
 

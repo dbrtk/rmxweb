@@ -18,7 +18,7 @@ class Feature(APIView):
             containerid = int(params['containerid'])
             feats = int(params.get('features', 10))
             words = int(params.get('words', 10))
-            docs_for_feat = params.get('documents-for-feature', 0)
+            # docs_for_feat = params.get('documents-for-feature', 0)
         except (ValueError, KeyError, TypeError) as _:
             raise Http404(params)
         container = Container.get_object(pk=containerid)
