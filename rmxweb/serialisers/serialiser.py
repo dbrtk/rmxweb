@@ -44,6 +44,22 @@ class Serialiser(abc.ABC):
             'file': _file
         }
 
+    @staticmethod
+    def to_txt(
+            lines: typing.List[typing.AnyStr] = None, file_name: str = None):
+        """
+
+        :param lines:
+        :param file_name:
+        :return:
+        """
+        _file = io.StringIO()
+        _file.writelines(lines)
+        return {
+            'name': file_name,
+            'file': _file
+        }
+
     @abc.abstractmethod
     def get_value(self):
 

@@ -1,5 +1,111 @@
+"""
+
+"""
+from .csv_serialiser import CsvSerialiser
+from rmxweb.config import DATETIME_STRING_FORMAT
+from .serialiser_factory import SerialiserFactory
+
+CONTAINER_COLUMNS = [
+    'pk', 'name', 'crawl_ready', 'integrity_check_in_progress',
+    'container_ready', 'created', 'updated', 'uid'
+]
+
+DOC_COLUMNS = [
+    'pk', 'containerid', 'created', 'updated', 'url', 'hostname', 'seed',
+    'title', 'file_id', 'hash_text'
+]
+
+CONFIG = {}
 
 
+@SerialiserFactory.set_serialiser('container_csv')
+class ContainerCsv(CsvSerialiser):
 
+    def __init__(self, *args, process_links: bool = False, **kwargs):
 
+        super().__init__(*args, **kwargs)
 
+        self.container = []
+        self.docs = []
+        self.links = []
+
+        self.iter_container()
+        self.iter_docs()
+
+        params = [self.get_container(), self.get_docs()]
+        if process_links:
+            self.iter_links()
+            params.append(self.get_links())
+        self.write_to_zip(*params)
+
+    def iter_container(self):
+
+        for item in self.data['container']:
+            self.container.append(self.serialise_container(item))
+
+    def iter_docs(self):
+
+        for doc in self.data['dataset']:
+            self.docs.append(self.serialise_doc(doc))
+
+    def iter_links(self):
+
+        while self.data['links']:
+            link = self.data['links'].pop(0)
+            self.links.append(self.serialise_link(link))
+
+    @staticmethod
+    def serialise_container(c):
+
+        return {
+            'pk': c.pk,
+            'name': c.name,
+            'crawl_ready': c.crawl_ready,
+            'integrity_check_in_progress': c.integrity_check_in_progress,
+            'container_ready': c.container_ready,
+            'created': c.created.strftime(DATETIME_STRING_FORMAT),
+            'updated': c.updated.strftime(DATETIME_STRING_FORMAT),
+            'uid': c.uid
+        }
+
+    @staticmethod
+    def serialise_doc(doc):
+
+        return {
+            'pk': doc.pk,
+            'containerid': doc.container.id,
+            'created': doc.created.strftime(DATETIME_STRING_FORMAT),
+            'updated': doc.updated.strftime(DATETIME_STRING_FORMAT),
+            'url': doc.url,
+            'hostname': doc.hostname,
+            'seed': doc.seed,
+            'title': doc.title,
+            'file_id': doc.file_id,
+            'hash_text': doc.hash_text
+        }
+
+    def serialise_link(self, doc):
+
+        raise NotImplementedError
+
+    def get_links(self):
+
+        raise NotImplementedError
+
+    def get_container(self):
+
+        return self.to_csv(
+            rows=self.container,
+            file_name='container.csv',
+            columns=CONTAINER_COLUMNS)
+
+    def get_docs(self):
+
+        return self.to_csv(
+            rows=self.docs,
+            file_name='documents.csv',
+            columns=DOC_COLUMNS)
+
+    def get_conf(self):
+
+        raise NotImplementedError

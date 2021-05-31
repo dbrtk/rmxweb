@@ -1,10 +1,10 @@
 
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .data import request_features
-from data.serializers import DatasetSerializer
+from data.models import Data
 from .decorators import graph_request
 from .emit import compute_features, crawl_async
 from .models import Container
@@ -17,10 +17,20 @@ from rmxweb import config
 class ContainerList(APIView):
 
     def get(self, request, format=None):
-
+        """Retrieves a list of all existing containers."""
         containers = Container.objects.all().order_by('-created')
-        serializer = ContainerSerializer(containers, many=True)
-        return JsonResponse({'data': serializer.data})
+        data_seed = Data.filter_seed_data([_.pk for _ in containers])
+
+        serialiser = SerialiserFactory().get_serialiser('container_csv')
+        serialiser = serialiser(
+            data={'container': containers, 'dataset': data_seed}
+        )
+        resp = HttpResponse(
+            serialiser.get_value(),
+            content_type='application/force-download'
+        )
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        return resp
 
     def post(self, request, format=None):
         """
@@ -62,7 +72,7 @@ class ContainerRecord(APIView):
         except Container.DoesNotExist:
             raise Http404
 
-    def get(self, request, pk, format=None):
+    def get(self, request, pk, **_):
         """
         Retrieve a Container object for a given id (pk).
         :param request:
@@ -70,15 +80,41 @@ class ContainerRecord(APIView):
         :param format:
         :return:
         """
+        params = request.GET.dict()
+        links = params.get('links', False)
+        if not isinstance(links, bool):
+            raise Http404(params)
         container = self.get_object(pk)
-        container_serializer = ContainerSerializer(self.get_object(pk))
-        data_serializer = DatasetSerializer(container.data_set.all(), many=True)
-        dataset = data_serializer.data
-        return JsonResponse({
-            'dataset': dataset,
-            'dataset_length': len(dataset),
-            'container': container_serializer.data,
-            'containerid': pk})
+        if not container.crawl_ready or not container.container_ready:
+            container_serializer = ContainerSerializer(self.get_object(pk))
+            return JsonResponse({
+                'success': False,
+                'container': container_serializer.data
+            })
+        dataset = container.data_set.all()
+
+        # links = []
+        # for datum in dataset:
+        #     links += datum.get_all_links()
+        serialiser = SerialiserFactory().get_serialiser('container_csv')
+        serialiser = serialiser(
+            data={'container': [container], 'dataset': dataset}
+        )
+        resp = HttpResponse(
+            serialiser.get_value(),
+            content_type='application/force-download'
+        )
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        return resp
+
+    @staticmethod
+    def check_container(containerid: int):
+        """
+        Checks if a container is ready.
+        :param containerid:
+        :return:
+        """
+        pass
 
     def put(self, request, pk, format=None):
         """
@@ -126,18 +162,6 @@ class ContainerRecord(APIView):
         """
         Container.get_object(pk=pk).delete()
         return JsonResponse({'msg': 'deleted container with id: {pk}'})
-
-
-class FeaturesList(APIView):
-    """Lists all the features that belong to a container."""
-    # todo(): delete this class!
-    def get(self, request, containerid: int = None, format=None):
-        """Returns the features for a given container."""
-
-        return JsonResponse({
-            'msg': f'list of all features for container with id: {containerid}',
-            'pk': containerid,
-        })
 
 
 class Features(APIView):

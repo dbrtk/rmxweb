@@ -99,6 +99,15 @@ class Data(models.Model):
             Link.create(url=item, data=obj)
         return obj
 
+    @classmethod
+    def filter_seed_data(cls, cids: typing.List[int]):
+        """
+        Filters all seed data objects for a list of container ids.
+        :param cids: list of container ids.
+        :return:
+        """
+        return cls.objects.filter(seed=True, container_id__in=cids)
+
     def get_file_path(self, container: Container = None):
         """
         Returns the path of the file as it is saved on disk

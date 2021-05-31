@@ -1,9 +1,7 @@
-"""
-Serialising Data objects.
-"""
 from .serialiser_factory import SerialiserFactory
 from .csv_serialiser import CsvSerialiser
 from rmxweb.config import DATETIME_STRING_FORMAT
+
 
 LINK_COLUMNS = ['pk', 'created', 'url', 'hostname', 'dataid']
 DOC_COLUMNS = [
@@ -12,24 +10,31 @@ DOC_COLUMNS = [
 ]
 
 
-@SerialiserFactory.set_serialiser('data_csv')
-class DataCsv(CsvSerialiser):
+@SerialiserFactory.set_serialiser('data_list_csv')
+class DataListCsv(CsvSerialiser):
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
-        self.docs = [self.serialise_doc(self.data['doc'])]
+        super(DataListCsv, self).__init__(*args, **kwargs)
+        self.docs = []
         self.links = []
-        self.text = []
-
+        self.iter_docs()
         self.iter_links()
         self.write_to_zip(
             self.get_links(),
-            self.get_docs(),
-            self.get_text()
+            self.get_docs()
         )
 
+    def iter_docs(self):
+
+        _items = list(self.data['dataset'])
+        del self.data['dataset']
+        while _items:
+            doc = _items.pop(0)
+            self.docs.append(self.serialise_doc(doc))
+
     def iter_links(self):
+
         _items = list(self.data['links'])
         del self.data['links']
         while _items:
@@ -38,6 +43,7 @@ class DataCsv(CsvSerialiser):
 
     @staticmethod
     def serialise_doc(doc):
+
         return {
             'pk': doc.pk,
             'containerid': doc.container.id,
@@ -53,6 +59,7 @@ class DataCsv(CsvSerialiser):
 
     @staticmethod
     def serialise_link(link):
+
         return {
             'pk': link.pk,
             'created': link.created.strftime(DATETIME_STRING_FORMAT),
@@ -72,14 +79,3 @@ class DataCsv(CsvSerialiser):
             rows=self.docs,
             file_name='data.csv',
             columns=DOC_COLUMNS)
-
-    def get_text(self):
-
-        return self.to_txt(
-            lines=[f'{_}\n' for _ in self.data['text']],
-            file_name='text.txt',
-        )
-
-    def get_config(self):
-
-        pass

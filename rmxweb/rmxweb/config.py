@@ -83,3 +83,8 @@ OUTPUT_TYPE_JSON = os.environ.get('OUTPUT_TYPE_JSON', False)
 
 # available data formats for http responses
 AVAILABLE_FORMATS = ['json', 'csv']
+
+
+# datetime format
+DATETIME_STRING_FORMAT = "%d/%m/%Y, %H:%M:%S"
+

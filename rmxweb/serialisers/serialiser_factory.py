@@ -3,6 +3,7 @@ from .serialiser import Serialiser
 
 
 class SerialiserFactory:
+    """ Serialiser's Factory. """
     serialisers = {}
 
     @classmethod
@@ -49,6 +50,3 @@ class SerialiserFactory:
                 f'{serialiser_name} is not defined in serialisers.'
             )
         return self.serialisers[serialiser_name]
-
-
-# factory = SerialiserFactory()

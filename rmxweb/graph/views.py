@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from container.decorators import feats_available, graph_request
 from container.models import Container, FeaturesStatus
 from .data import get_graph
-from .emit import get_features, hierarchical_tree, search_texts
+from .emit import hierarchical_tree, search_texts
 from rmxweb import config
 from serialisers import SerialiserFactory
 
