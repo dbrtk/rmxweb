@@ -27,8 +27,7 @@ class Feature(APIView):
         if not stat['success']:
             return JsonResponse(stat)
 
-        resp = self.get_features(
-            containerid, feats, words, container.get_folder_path())
+        resp = self.get_features(containerid, feats, words)
         if not resp['success']:
             return JsonResponse(resp)
         serialiser = SerialiserFactory().get_serialiser('features_csv')
@@ -60,7 +59,7 @@ class Feature(APIView):
         return {'success': True}
 
     @staticmethod
-    def get_features(containerid: int, feats: int, words: int, path: str):
+    def get_features(containerid: int, feats: int, words: int):
         """
         Getting features and lexemes.
         :param containerid:
@@ -69,8 +68,7 @@ class Feature(APIView):
         :param path:
         :return:
         """
-        out = get_features(containerid=containerid, feats=feats, words=words,
-                           path=path)
+        out = get_features(containerid=containerid, features=feats, words=words)
         if not out['success']:
             return out
 

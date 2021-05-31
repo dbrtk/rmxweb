@@ -16,6 +16,10 @@ def get_features(reqobj):
     :param path:
     :return:
     """
+
+    print('\n\n\nget_features with feats_available')
+    print(reqobj)
+
     container = reqobj['container']
     resp = celery.send_task(
         NLP_TASKS['retrieve_features'],
