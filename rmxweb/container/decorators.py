@@ -72,6 +72,7 @@ def feats_available(func):
 def graph_request(func):
     """Decorating view methods that contain a graph request."""
 
+    # todo(): delete this!
     @wraps(func)
     def wrapper(self, request, containerid: int = None, **kwargs):
         """

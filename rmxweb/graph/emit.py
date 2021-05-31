@@ -15,6 +15,7 @@ def get_features(containerid: (int, str), feats: int, words: int, path: str):
     :param path:
     :return:
     """
+    # TODO(): DELETE
     return celery.send_task(
         NLP_TASKS['retrieve_features'],
         kwargs={

@@ -28,4 +28,5 @@ urlpatterns = [
     path('data/', include('data.urls')),
 
     path('graph/', include('graph.urls')),
+    path('feature/', include('feature.urls')),
 ]
