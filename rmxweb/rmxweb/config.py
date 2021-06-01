@@ -86,5 +86,5 @@ AVAILABLE_FORMATS = ['json', 'csv']
 
 
 # datetime format
-DATETIME_STRING_FORMAT = "%d/%m/%Y, %H:%M:%S"
+DATETIME_STRING_FORMAT = "%d/%m/%Y-%H:%M:%S"
 

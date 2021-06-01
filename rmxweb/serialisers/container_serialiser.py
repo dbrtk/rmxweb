@@ -2,7 +2,6 @@
 
 """
 from .csv_serialiser import CsvSerialiser
-from rmxweb.config import DATETIME_STRING_FORMAT
 from .serialiser_factory import SerialiserFactory
 
 CONTAINER_COLUMNS = [
@@ -63,8 +62,8 @@ class ContainerCsv(CsvSerialiser):
             'crawl_ready': c.crawl_ready,
             'integrity_check_in_progress': c.integrity_check_in_progress,
             'container_ready': c.container_ready,
-            'created': c.created.strftime(DATETIME_STRING_FORMAT),
-            'updated': c.updated.strftime(DATETIME_STRING_FORMAT),
+            'created': c.created.isoformat(),
+            'updated': c.updated.isoformat(),
             'uid': c.uid
         }
 
@@ -74,8 +73,8 @@ class ContainerCsv(CsvSerialiser):
         return {
             'pk': doc.pk,
             'containerid': doc.container.id,
-            'created': doc.created.strftime(DATETIME_STRING_FORMAT),
-            'updated': doc.updated.strftime(DATETIME_STRING_FORMAT),
+            'created': doc.created.isoformat(),
+            'updated': doc.updated.isoformat(),
             'url': doc.url,
             'hostname': doc.hostname,
             'seed': doc.seed,

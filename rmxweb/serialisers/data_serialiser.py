@@ -3,7 +3,6 @@ Serialising Data objects.
 """
 from .serialiser_factory import SerialiserFactory
 from .csv_serialiser import CsvSerialiser
-from rmxweb.config import DATETIME_STRING_FORMAT
 
 LINK_COLUMNS = ['pk', 'created', 'url', 'hostname', 'dataid']
 DOC_COLUMNS = [
@@ -41,8 +40,8 @@ class DataCsv(CsvSerialiser):
         return {
             'pk': doc.pk,
             'containerid': doc.container.id,
-            'created': doc.created.strftime(DATETIME_STRING_FORMAT),
-            'updated': doc.updated.strftime(DATETIME_STRING_FORMAT),
+            'created': doc.created.isoformat(),
+            'updated': doc.updated.isoformat(),
             'url': doc.url,
             'hostname': doc.hostname,
             'seed': doc.seed,
@@ -55,7 +54,7 @@ class DataCsv(CsvSerialiser):
     def serialise_link(link):
         return {
             'pk': link.pk,
-            'created': link.created.strftime(DATETIME_STRING_FORMAT),
+            'created': link.created.isoformat(),
             'url': link.url,
             'dataid': link.data.id,
             'hostname': link.hostname
