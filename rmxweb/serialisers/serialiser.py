@@ -11,13 +11,17 @@ class Serialiser(abc.ABC):
     Converting lists of python dicts to csv datasets and writing these to
     zipfile.
     """
-    def __init__(self, data: (dict, list) = None, **kwds):
+    def __init__(self, data: (dict, list) = None, endpoint: str = None,
+                 query_params: dict = None, **kwds):
         """
         A serialiser expects a dataset as input called `data`.
         :param data:
         """
         self.zip = io.BytesIO()
         self.data = data
+
+        self.endpoint = endpoint
+        self.query_params = query_params
 
     def write_to_zip(self, *files):
         """
