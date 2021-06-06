@@ -1,9 +1,12 @@
 """
 Serialising Data objects.
 """
+from copy import deepcopy
 import multiprocessing as mp
-from .serialiser_factory import SerialiserFactory
+
 from .csv_serialiser import CsvSerialiser
+from .data_list_serialiser import CONFIG
+from .serialiser_factory import SerialiserFactory
 
 LINK_COLUMNS = ['pk', 'created', 'url', 'hostname', 'dataid']
 DOC_COLUMNS = [
@@ -81,6 +84,11 @@ class DataCsv(CsvSerialiser):
             file_name='text.txt',
         )
 
-    def get_config(self):
+    def get_conf(self):
 
-        pass
+        out = deepcopy(CONFIG)
+        out['count'] = {
+            'links': len(self.links),
+            'data': len(self.docs)
+        }
+        return self.to_json(out, 'config.json')
