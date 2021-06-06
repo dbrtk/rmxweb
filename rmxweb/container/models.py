@@ -365,15 +365,15 @@ class FeaturesStatus(models.Model):
     containerid = models.IntegerField(null=True)
     computing_dendrogram = models.BooleanField(default=False)
 
-    # container = models.ForeignKey(Container, on_delete=models.CASCADE)
-    # type = models.CharField(max_length=50, default='features')
-    # task_name = models.CharField(max_length=100, null=True)
-    # task_id = models.CharField(max_length=100, null=True)
-
     @classmethod
     def create(cls, containerid: int = None, feats: int = None,
                busy: bool = True):
-
+        """
+        :param containerid:
+        :param feats:
+        :param busy:
+        :return:
+        """
         obj = cls.get_status_feats(containerid=containerid, feats=feats)
         if obj:
             return obj
@@ -383,7 +383,11 @@ class FeaturesStatus(models.Model):
 
     @classmethod
     def get_status_feats(cls, containerid: int = None, feats: int = None):
-
+        """
+        :param containerid:
+        :param feats:
+        :return:
+        """
         try:
             obj = cls.objects.get(containerid=containerid, feats=feats)
         except cls.DoesNotExist as _:
@@ -393,6 +397,12 @@ class FeaturesStatus(models.Model):
     @classmethod
     def set_status_feats(cls, containerid: int = None, feats: int = None,
                          busy: bool = True):
+        """
+        :param containerid:
+        :param feats:
+        :param busy:
+        :return:
+        """
         obj = cls.get_status_feats(feats=feats, containerid=containerid)
         if obj:
             obj.busy = busy
@@ -403,7 +413,11 @@ class FeaturesStatus(models.Model):
 
     @classmethod
     def del_status_feats(cls, containerid: int = None, feats: int = None):
-
+        """
+        :param containerid:
+        :param feats:
+        :return:
+        """
         cls.objects.filter(containerid=containerid, feats=feats).delete()
 
     @classmethod
@@ -450,7 +464,6 @@ class FeaturesStatus(models.Model):
     @classmethod
     def computing_feats_busy(cls, containerid: int, feats: int) -> bool:
         """
-
         :param containerid:
         :param feats:
         :return:
@@ -464,7 +477,6 @@ class FeaturesStatus(models.Model):
     @classmethod
     def container_busy(cls, containerid: int = None):
         """
-
         :param containerid:
         :return:
         """

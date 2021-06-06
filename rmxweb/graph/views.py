@@ -12,7 +12,32 @@ from .emit import hierarchical_tree, search_texts
 from serialisers import SerialiserFactory
 
 
-class Graph(APIView):
+class _View(APIView):
+
+    @staticmethod
+    def http_resp_for_busy(
+            *, containerid: (int, str), payload: dict = None, uri: str = None,
+            msg: str = None):
+        """
+        :param containerid:
+        :param payload:
+        :param uri:
+        :param msg:
+        :return:
+        """
+        return {
+            'task': {
+                '@uri': uri,
+                'id': containerid,
+                'name': msg,
+                'job-state': "STARTED",
+                'job-status': "INPROGRESS",
+                'response-payload': payload
+            }
+        }
+
+
+class Graph(_View):
     """Returns a network graph for a given container id and features number.
     """
 
@@ -38,29 +63,37 @@ class Graph(APIView):
         :return:
         """
         if FeaturesStatus.computing_feats_busy(containerid, features):
-            return Response({
-                'task': {
-                    '@uri': uri,
-                    'name': 'The graph is being computed.',
-                    "job-state": "STARTED",
-                    "job-status": "INPROGRESS",
-                    "params": {
+            return Response(
+                super().http_resp_for_busy(
+                    containerid=containerid,
+                    uri=uri,
+                    msg='Graph being computed',
+                    payload={
                         'containerid': containerid,
                         'words': words,
                         'features': features,
                         'docsperfeat': docsperfeat,
                         'featsperdoc': featsperdoc
-                    },
-                    "summary":
-                        'the system is already busy computing this task.'
-                }}, status=202)
+                    }
+                ), status=202)
+
         serialiser = SerialiserFactory().get_serialiser('graph_csv')
         data = get_graph(
             containerid=containerid, words=words, features=features,
             featsperdoc=featsperdoc, docsperfeat=docsperfeat
         )
-        serialiser = serialiser(data)
+        if not data.get('success', True):
+            return Response(
+                super().http_resp_for_busy(
+                    containerid=containerid,
+                    payload=data,
+                    uri=uri,
+                    msg='Graph being computed',
 
+                ),
+                status=202
+            )
+        serialiser = serialiser(data)
         zip_name = serialiser.get_zip_name(
             f'Network-Graph-ContainerID-{containerid}')
         resp = HttpResponse(
@@ -71,7 +104,7 @@ class Graph(APIView):
         return resp
 
 
-class Dendrogram(APIView):
+class Dendrogram(_View):
     """ Returns the dataset for the hierarchical tree / dendrogram.
     """
     def get(self, request):
@@ -95,33 +128,22 @@ class Dendrogram(APIView):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
         if FeaturesStatus.computing_dendrogram_busy(containerid):
-            return Response({
-                'task': {
-                    '@uri': request.get_full_path(),
-                    'name': 'The dendrogram is being computed.',
-                    "job-state": "STARTED",
-                    "job-status": "INPROGRESS",
-                    "params": {
-                        'containerid': containerid,
-                    },
-                    "summary":
-                        'the system is already busy computing this task.'
-                }}, status=202)
-
+            return Response(self.http_resp_for_busy(
+                containerid=containerid,
+                uri=request.get_full_path(),
+                msg='Dendrogram being computed'
+            ), status=202)
         resp = hierarchical_tree(containerid=containerid, flat=flat)
         if not resp['success']:
             # In this case, the system is busy or there is an issue.
             if resp.get('error', False):
                 raise Http404(resp)
-            return Response({
-                'task': {
-                    '@uri': request.get_full_path(),
-                    'name': 'The dendrogram is being computed.',
-                    "job-state": "STARTED",
-                    "job-status": "INPROGRESS",
-                    "resp": resp
-                }
-            })
+            return Response(self.http_resp_for_busy(
+                containerid=containerid,
+                payload=resp,
+                msg="Dendrogram being computed",
+                uri=request.get_full_path()
+            ), status=202)
         branch = resp['branch']
         leaf = resp['leaf']
         leaf = self.prepare_data(containerid, leaf)

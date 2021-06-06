@@ -133,7 +133,7 @@ class ContainerCsv(CsvSerialiser):
 
         return self.to_csv(
             rows=self.docs,
-            file_name='documents.csv',
+            file_name='data.csv',
             columns=DOC_COLUMNS)
 
     def get_conf(self):
