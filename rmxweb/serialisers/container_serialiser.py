@@ -1,6 +1,8 @@
 """
 
 """
+from copy import deepcopy
+
 from .csv_serialiser import CsvSerialiser
 from .serialiser_factory import SerialiserFactory
 
@@ -14,7 +16,36 @@ DOC_COLUMNS = [
     'title', 'file_id', 'hash_text'
 ]
 
-CONFIG = {}
+CONFIG = {
+    'columns': {
+        'container': CONTAINER_COLUMNS,
+        'data': DOC_COLUMNS
+    },
+    'data_type_mapping': {
+        'container': {
+            'pk': 'integer',
+            'name': 'string',
+            'crawl_ready': 'boolean',
+            'integrity_check_in_progress': 'boolean',
+            'container_ready': 'boolean',
+            'created': 'datetime',
+            'updated': 'datetime',
+            'uid': 'string'
+        },
+        'data': {
+            'pk': 'integer',
+            'containerid': 'integer',
+            'created': 'datetime',
+            'updated': 'datetime',
+            'url': 'string',
+            'hostname': 'string',
+            'seed': 'boolean',
+            'title': 'string',
+            'file_id': 'string',
+            'hash_text': 'string'
+        }
+    }
+}
 
 
 @SerialiserFactory.set_serialiser('container_csv')
@@ -31,7 +62,7 @@ class ContainerCsv(CsvSerialiser):
         self.iter_container()
         self.iter_docs()
 
-        params = [self.get_container(), self.get_docs()]
+        params = [self.get_container(), self.get_docs(), self.get_conf()]
         if process_links:
             self.iter_links()
             params.append(self.get_links())
@@ -107,4 +138,9 @@ class ContainerCsv(CsvSerialiser):
 
     def get_conf(self):
 
-        raise NotImplementedError
+        out = deepcopy(CONFIG)
+        out['count'] = {
+            'container': len(self.container),
+            'data': len(self.docs)
+        }
+        return self.to_json(out, 'config.json')

@@ -1,6 +1,6 @@
 
-from django.http import Http404, HttpResponse, JsonResponse
-from rest_framework.views import APIView
+from django.http import Http404, HttpResponse
+from rest_framework.views import APIView, Response
 
 from container.models import Container, FeaturesStatus
 from .emit import get_features
@@ -21,25 +21,49 @@ class Feature(APIView):
             # docs_for_feat = params.get('documents-for-feature', 0)
         except (ValueError, KeyError, TypeError) as _:
             raise Http404(params)
-        container = Container.get_object(pk=containerid)
 
         stat = self.check_features_status(containerid, feats)
         if not stat['success']:
-            return JsonResponse(stat)
+            return Response(self.http_resp_for_busy(
+                id=containerid,
+                uri=request.get_full_path(),
+                payload=stat
+            ), status=202)
 
         resp = self.get_features(containerid, feats, words)
         if not resp['success']:
-            return JsonResponse(resp)
+            return Response(self.http_resp_for_busy(
+                id=containerid,
+                uri=request.get_full_path(),
+                payload=resp
+            ), status=202)
         serialiser = SerialiserFactory().get_serialiser('features_csv')
         serialiser = serialiser(data=resp)
-
+        zip_name = serialiser.get_zip_name(
+            f'Features-ContainerID-{containerid}')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
 
+    def http_resp_for_busy(self, id: (int, str), payload: dict, uri: str):
+        """
+        :param payload:
+        :param uri:
+        :return:
+        """
+        return {
+            'task': {
+                '@uri': uri,
+                'id': id,
+                'name': 'Features not ready.',
+                'job-state': "STARTED",
+                'job-status': "INPROGRESS",
+                'summary': payload
+            }
+        }
     @staticmethod
     def check_features_status(containerid: int, features: int):
         """

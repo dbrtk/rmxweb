@@ -2,23 +2,23 @@
 import json
 import uuid
 
-from django.http import Http404, HttpResponse, JsonResponse
-from rest_framework.views import APIView
+from django.http import Http404, HttpResponse
+from rest_framework.views import APIView, Response
 
-from container.decorators import feats_available, graph_request
 from container.models import Container, FeaturesStatus
 from .data import get_graph
+from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
-from rmxweb import config
 from serialisers import SerialiserFactory
 
 
 class Graph(APIView):
-    """Returns a specific feature defined by the features number."""
+    """Returns a network graph for a given container id and features number.
+    """
 
     @graph_request
     def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 0, featsperdoc: int = 3, **_):
+            docsperfeat: int = 0, featsperdoc: int = 3, uri: str = None, **_):
         """
         Returns features for a given containerid and parameters defined in the
         request's GET dictionary. The expected parameters are:
@@ -34,46 +34,40 @@ class Graph(APIView):
         :param docsperfeat:
         :param featsperdoc:
         :param data_format:
+        :param uri:
         :return:
         """
-        out = {
-            'params': {
-                'containerid': containerid,
-                'words': words,
-                'features': features,
-                'docsperfeat': docsperfeat,
-                'featsperdoc': featsperdoc
-            },
-        }
-
         if FeaturesStatus.computing_feats_busy(containerid, features):
-            out.update({
-                'retry': True,
-                'busy': True,
-                'success': False,
-            })
-            return JsonResponse(out)
-        serialiser_type = 'graph_json' if config.OUTPUT_TYPE_JSON \
-            else 'graph_csv'
-        try:
-            serialiser = SerialiserFactory().get_serialiser(serialiser_type)
-        except ValueError:
-            raise Http404(out)
-
-        out['success'] = True
+            return Response({
+                'task': {
+                    '@uri': uri,
+                    'name': 'The graph is being computed.',
+                    "job-state": "STARTED",
+                    "job-status": "INPROGRESS",
+                    "params": {
+                        'containerid': containerid,
+                        'words': words,
+                        'features': features,
+                        'docsperfeat': docsperfeat,
+                        'featsperdoc': featsperdoc
+                    },
+                    "summary":
+                        'the system is already busy computing this task.'
+                }}, status=202)
+        serialiser = SerialiserFactory().get_serialiser('graph_csv')
         data = get_graph(
             containerid=containerid, words=words, features=features,
             featsperdoc=featsperdoc, docsperfeat=docsperfeat
         )
         serialiser = serialiser(data)
 
-        if config.OUTPUT_TYPE_JSON:
-            return JsonResponse(serialiser.get_value())
+        zip_name = serialiser.get_zip_name(
+            f'Network-Graph-ContainerID-{containerid}')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
 
 
@@ -99,45 +93,46 @@ class Dendrogram(APIView):
             raise Http404(params)
         if not isinstance(flat, bool):
             raise Http404(params)
-        out = {
-            'containerid': containerid,
-            'success': False,
-            'params': params
-        }
-        serialiser_type = 'dendrogram_json' if config.OUTPUT_TYPE_JSON \
-            else 'dendrogram_csv'
-        try:
-            serialiser = SerialiserFactory().get_serialiser(serialiser_type)
-        except ValueError:
-            raise Http404(out)
+        serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
         if FeaturesStatus.computing_dendrogram_busy(containerid):
-            out['msg'] = 'The dendrogram is currently being computed.'
-            out['busy'] = True
-            return JsonResponse(out)
+            return Response({
+                'task': {
+                    '@uri': request.get_full_path(),
+                    'name': 'The dendrogram is being computed.',
+                    "job-state": "STARTED",
+                    "job-status": "INPROGRESS",
+                    "params": {
+                        'containerid': containerid,
+                    },
+                    "summary":
+                        'the system is already busy computing this task.'
+                }}, status=202)
 
         resp = hierarchical_tree(containerid=containerid, flat=flat)
-
         if not resp['success']:
             # In this case, the system is busy or there is an issue.
-            out['response'] = resp
-            return JsonResponse(out)
+            if resp.get('error', False):
+                raise Http404(resp)
+            return Response({
+                'task': {
+                    '@uri': request.get_full_path(),
+                    'name': 'The dendrogram is being computed.',
+                    "job-state": "STARTED",
+                    "job-status": "INPROGRESS",
+                    "resp": resp
+                }
+            })
         branch = resp['branch']
         leaf = resp['leaf']
         leaf = self.prepare_data(containerid, leaf)
-        if config.OUTPUT_TYPE_JSON:
-            out['leaf'] = leaf
-            out['branch'] = branch
-            out['leaf_length'] = len(leaf)
-            out['branch_length'] = len(branch)
-            out['success'] = True
-            return JsonResponse(out)
-
         serialiser = serialiser(data={'branch': branch, 'leaf': leaf})
+        zip_name = serialiser.get_zip_name(
+            f'Dendrogram-ContainerID-{containerid}')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
 
     def prepare_data(self, containerid, data):
@@ -221,18 +216,11 @@ def get_context(request):
     serialiser = serialiser(data={
         'docs': data_objs, 'response': data, 'lemma': lemma
     })
-    if config.OUTPUT_TYPE_JSON:
-        return JsonResponse({
-            'success': True,
-            'data': data.get('data'),
-            'documents': data_objs,
-            'lemma': lemma,
-            'words': matchwords,
-        })
-
+    zip_name = serialiser.get_zip_name(
+        f'Feature-Context-ContainerID-{containerid}')
     resp = HttpResponse(
         serialiser.get_value(),
         content_type='application/force-download'
     )
-    resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+    resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
     return resp

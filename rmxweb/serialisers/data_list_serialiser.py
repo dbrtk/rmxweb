@@ -1,3 +1,7 @@
+"""Serialiser for lists of data objects."""
+from copy import deepcopy
+import multiprocessing as mp
+
 from .serialiser_factory import SerialiserFactory
 from .csv_serialiser import CsvSerialiser
 
@@ -7,10 +11,39 @@ DOC_COLUMNS = [
     'pk', 'containerid', 'created', 'updated', 'url', 'hostname', 'seed',
     'title', 'file_id', 'hash_text'
 ]
+CONFIG = {
+    'columns': {
+        'data': DOC_COLUMNS,
+        'link': LINK_COLUMNS,
+    },
+    'data_type_mapping': {
+        'data': {
+            'pk': 'integer',
+            'containerid': 'integer',
+            'created': 'datetime',
+            'updated': 'datetime',
+            'url': 'string',
+            'hostname': 'string',
+            'seed': 'boolean',
+            'title': 'string',
+            'file_id': 'string',
+            'hash_text': 'string'
+        },
+        'link': {
+            'pk': 'integer',
+            'created': 'datetime',
+            'url': 'string',
+            'hostname': 'string',
+            'dataid': 'string'
+        }
+    }
+}
 
 
 @SerialiserFactory.set_serialiser('data_list_csv')
 class DataListCsv(CsvSerialiser):
+
+    cpu_count = mp.cpu_count()
 
     def __init__(self, *args, **kwargs):
 
@@ -21,7 +54,8 @@ class DataListCsv(CsvSerialiser):
         self.iter_links()
         self.write_to_zip(
             self.get_links(),
-            self.get_docs()
+            self.get_docs(),
+            self.get_conf()
         )
 
     def iter_docs(self):
@@ -36,9 +70,8 @@ class DataListCsv(CsvSerialiser):
 
         _items = list(self.data['links'])
         del self.data['links']
-        while _items:
-            link = _items.pop(0)
-            self.links.append(self.serialise_link(link))
+        with mp.Pool(processes=self.cpu_count - 1) as pool:
+            self.links = pool.map(self.serialise_link, _items)
 
     @staticmethod
     def serialise_doc(doc):
@@ -78,3 +111,12 @@ class DataListCsv(CsvSerialiser):
             rows=self.docs,
             file_name='data.csv',
             columns=DOC_COLUMNS)
+
+    def get_conf(self):
+
+        out = deepcopy(CONFIG)
+        out['count'] = {
+            'links': len(self.links),
+            'data': len(self.docs)
+        }
+        return self.to_json(out, 'config.json')

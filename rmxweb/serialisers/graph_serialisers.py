@@ -2,7 +2,6 @@
 from copy import deepcopy
 
 from .csv_serialiser import CsvSerialiser
-from .json_serialiser import JsonSerialiser
 from .serialiser_factory import SerialiserFactory
 
 EDGE_COLUMNS = ['dataid', 'featureid', 'weight']
@@ -100,19 +99,3 @@ class GraphCSVSerialiser(CsvSerialiser):
             'words': len(self.word)
         }
         return self.to_json(out, 'config.json')
-
-
-@SerialiserFactory.set_serialiser('graph_json')
-class GraphJsonSerialiser(JsonSerialiser):
-
-    def __init__(self, *args, **kwargs):
-
-        super().__init__(*args, **kwargs)
-        out = deepcopy(CONFIG)
-        out['count'] = {
-            'features': len(self.data['features']),
-            'docs': len(self.data['docs']),
-            'edges': len(self.data['edges']),
-            'words': len(self.data['words'])
-        }
-        self.data['config'] = out

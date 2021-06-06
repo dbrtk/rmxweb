@@ -6,6 +6,7 @@ import os
 import pytz
 import re
 import stat
+import shutil
 from typing import List
 import uuid
 
@@ -333,6 +334,14 @@ class Container(models.Model):
         :return:
         """
         pass
+
+    def delete_container(self):
+        """
+        Deleting the container and its directory on the server.
+        :return:
+        """
+        shutil.rmtree(self.get_folder_path())
+        self.delete()
 
 
 class CrawlStatus(models.Model):

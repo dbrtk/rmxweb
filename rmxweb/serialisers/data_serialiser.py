@@ -1,6 +1,7 @@
 """
 Serialising Data objects.
 """
+import multiprocessing as mp
 from .serialiser_factory import SerialiserFactory
 from .csv_serialiser import CsvSerialiser
 
@@ -13,6 +14,8 @@ DOC_COLUMNS = [
 
 @SerialiserFactory.set_serialiser('data_csv')
 class DataCsv(CsvSerialiser):
+
+    cpu_count = mp.cpu_count()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,9 +34,8 @@ class DataCsv(CsvSerialiser):
     def iter_links(self):
         _items = list(self.data['links'])
         del self.data['links']
-        while _items:
-            link = _items.pop(0)
-            self.links.append(self.serialise_link(link))
+        with mp.Pool(processes=self.cpu_count - 1) as pool:
+            self.links = pool.map(self.serialise_link, _items)
 
     @staticmethod
     def serialise_doc(doc):

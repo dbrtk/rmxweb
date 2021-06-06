@@ -1,16 +1,12 @@
-
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .data import request_features
 from data.models import Data
-from .decorators import graph_request
-from .emit import compute_features, crawl_async
+from .emit import crawl_async
 from .models import Container
 from serialisers import SerialiserFactory
 from .serializers import ContainerSerializer
-from rmxweb.celery import celery
 from rmxweb import config
 
 
@@ -25,11 +21,12 @@ class ContainerList(APIView):
         serialiser = serialiser(
             data={'container': containers, 'dataset': data_seed}
         )
+        zip_name = serialiser.get_zip_name('Containers-List')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
 
     def post(self, request, format=None):
@@ -46,22 +43,23 @@ class ContainerList(APIView):
         url_list = [endpoint]
         crawl = request.data.get("crawl", True)
         if not isinstance(crawl, bool):
-            raise ValueError(request.data)
+            return Response(request.data, status=404)
 
         container = Container.create(the_name=the_name)
         depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
-
         crawlid = crawl_async(
             url_list=url_list, containerid=container.pk, depth=depth)
-        return JsonResponse({
-            'params': {
-                'name': the_name,
-                'url_list': url_list,
-                'endpoint': endpoint,
-                'crawl': crawl,
-            },
-            'crawlid': crawlid,
-        })
+        return Response({
+            'task': {
+                'href': request.get_full_path(),
+                'job-state': "STARTED",
+                'job-status': "INPROGRESS",
+                'id': container.pk,
+                'parameters': {
+                    'crawlid': crawlid
+                }
+            }
+        }, status=202)
 
 
 class ContainerRecord(APIView):
@@ -87,10 +85,16 @@ class ContainerRecord(APIView):
         container = self.get_object(pk)
         if not container.crawl_ready or not container.container_ready:
             container_serializer = ContainerSerializer(self.get_object(pk))
-            return JsonResponse({
-                'success': False,
-                'container': container_serializer.data
-            })
+            return Response({
+                'task': {
+                    '@uri': request.get_full_path(),
+                    'id': container.pk,
+                    'name': 'Container not ready.',
+                    'job-state': "STARTED",
+                    'job-status': "INPROGRESS",
+                    'summary': container_serializer.data
+                }
+            }, status=202)
         dataset = container.data_set.all()
 
         # links = []
@@ -100,21 +104,13 @@ class ContainerRecord(APIView):
         serialiser = serialiser(
             data={'container': [container], 'dataset': dataset}
         )
+        zip_name = serialiser.get_zip_name(f'Container-ID-{container.pk}')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
-
-    @staticmethod
-    def check_container(containerid: int):
-        """
-        Checks if a container is ready.
-        :param containerid:
-        :return:
-        """
-        pass
 
     def put(self, request, pk, format=None):
         """
@@ -129,7 +125,7 @@ class ContainerRecord(APIView):
         endpoint = request.data.get('endpoint')
         crawl = request.data.get("crawl", True)
         if not isinstance(crawl, bool):
-            raise ValueError(request.data)
+            raise Http404(request.data)
         container = Container.get_object(pk=pk)
         container.set_crawl_ready(value=False)
         resp = {}
@@ -146,11 +142,15 @@ class ContainerRecord(APIView):
             crawlid = crawl_async(
                 url_list=[endpoint], containerid=container.pk, depth=depth)
             resp = {
-                'endpoint': endpoint,
-                'crawlid': crawlid,
-                'data': request.data
+                'task': {
+                    'href': request.get_full_path(),
+                    'id': container.pk,
+                    'parameters': {
+                        'crawlid': crawlid,
+                    }
+                }
             }
-        return Response(resp, status=200)
+        return Response(resp, status=202)
 
     def delete(self, request, pk, format=None):
         """
@@ -160,104 +160,15 @@ class ContainerRecord(APIView):
         :param format:
         :return:
         """
-        Container.get_object(pk=pk).delete()
-        return JsonResponse({'msg': 'deleted container with id: {pk}'})
-
-
-class Features(APIView):
-    """Returns a specific feature defined by the features number."""
-
-    @graph_request
-    def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3, **_):
-        """
-        Returns features for a given containerid and parameters defined in the
-        request's GET dictionary. The expected parameters are:
-        containerid: int = None,
-        words: int = 10,
-        features: int = 10,
-        docsperfeat: int = 5,
-        featsperdoc: int = 3
-
-        :param containerid:
-        :param words:
-        :param features:
-        :param docsperfeat:
-        :param featsperdoc:
-        :return:
-        """
-        response = request_features(
-            containerid=containerid,
-            features=features,
-            words=words,
-            featsperdoc=featsperdoc,
-            docsperfeat=docsperfeat
-        )
-        return JsonResponse({
-            'data': response.get('features'),
-            'params': {
-                'containerid': containerid,
-                'words': words,
-                'featsperdoc': featsperdoc,
-                'docsperfeat': docsperfeat,
-                'feats': features
-            },
-        })
-
-    def post(self, request, containerid: int = None, feats: int = 10,
-             format=None):
-        """Creating features for a container and a feats number."""
-        resp = request_features(containerid=containerid, features=feats)
-        container = Container.get_object(pk=containerid)
-        if not container:
-            return Http404(f"The container with id: {containerid} doesn't exist.")
-        compute_features()
-
-    def delete(self, request, containerid: int = None, feats: int = 10, format=None):
-        """Delete features for a given container."""
-        pass
-
-
-class Documents(APIView):
-    """ retrieve documents (web pages) with features.
-    """
-    @graph_request
-    def get(self, containerid: int = None, words: int = 10, features: int = 10,
-            docsperfeat: int = 5, featsperdoc: int = 3, **_):
-        """
-        :param containerid:
-        :param words:
-        :param features:
-        :param docsperfeat:
-        :param featsperdoc:
-        :return:
-        """
-        response = request_features(
-            containerid=containerid,
-            feats=features,
-            words=words,
-            featsperdoc=featsperdoc,
-            docsperfeat=docsperfeat
-        )
-        return JsonResponse({
-            'data': response.get('docs'),
-            'params': {
-                'containerid': containerid,
-                'words': words,
-                'featsperdoc': featsperdoc,
-                'docsperfeat': docsperfeat,
-                'feats': features
-            },
-        })
-
-
-def test_celery(request, a, b):
-
-    resp = celery.send_task(
-        "scrasync.tasks.test_task",
-        args=[a, b],
-    ).get(timeout=3)
-
-    return JsonResponse({
-        'resp': resp
-    })
+        try:
+            obj = Container.get_object(pk=pk)
+        except Container.DoesNotExist:
+            raise Http404
+        obj.delete_container()
+        return Response({
+            'task': {
+                '@uri': request.get_full_path(),
+                'id': pk,
+                'name': 'Container deleted.',
+            }
+        }, status=202)

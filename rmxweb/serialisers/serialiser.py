@@ -1,5 +1,6 @@
 
 import abc
+import datetime
 import io
 import json
 import typing
@@ -68,3 +69,15 @@ class Serialiser(abc.ABC):
     def get_value(self):
 
         raise NotImplementedError('get_value needs to be implemented')
+
+    def get_zip_name(self, prefix: str):
+        """
+        Returns a string - a name for the zip returned by the http view.
+        :param prefix:
+        :return:
+        """
+        if not prefix:
+            prefix = self.__class__.__name__
+        ts = int(datetime.datetime.now().timestamp())
+        ext = 'zip'
+        return f'{prefix}-{ts}.{ext}'

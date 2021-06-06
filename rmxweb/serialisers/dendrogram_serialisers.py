@@ -1,7 +1,6 @@
 from copy import deepcopy
 
 from .csv_serialiser import CsvSerialiser
-from .json_serialiser import JsonSerialiser
 from .serialiser_factory import SerialiserFactory
 
 
@@ -70,9 +69,3 @@ class DendrogramCSV(CsvSerialiser):
             'leaf': len(self.leaf)
         }
         return self.to_json(out, 'config.json')
-
-
-@SerialiserFactory.set_serialiser('dendrogram_json')
-class DendrogramJson(JsonSerialiser):
-    pass
-

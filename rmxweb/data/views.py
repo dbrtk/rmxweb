@@ -1,10 +1,9 @@
 
 import json
-from django.http import Http404, HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse
 from rest_framework.views import APIView
 
 from .models import Data
-from .serializers import DatasetSerializer, LinksSerializer
 from serialisers import SerialiserFactory
 
 
@@ -15,11 +14,12 @@ class ListData(APIView):
         params = request.GET.dict()
         try:
             containerid = int(params.get('containerid'))
-            get_links = params.get('links')
-            if isinstance(get_links, str):
-                get_links = json.loads(get_links)
-            else:
-                get_links = bool(int(get_links))
+            get_links = params.get('links', False)
+            if not isinstance(get_links, bool):
+                if isinstance(get_links, str):
+                    get_links = json.loads(get_links)
+                else:
+                    get_links = bool(int(get_links))
         except (TypeError, ValueError, json.decoder.JSONDecodeError) as _:
             raise Http404(f'Provided parameters: {params}')
         links = []
@@ -30,11 +30,12 @@ class ListData(APIView):
 
         serialiser = SerialiserFactory().get_serialiser('data_list_csv')
         serialiser = serialiser(data={'dataset': data_objs, 'links': links})
+        zip_name = serialiser.get_zip_name(f'Data-ContainerID-{containerid}')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
 
 
@@ -56,9 +57,10 @@ class DataRecord(APIView):
         serialiser = serialiser(
             data={'doc': data_obj, 'links': links, 'text': data_obj.get_text()}
         )
+        zip_name = serialiser.get_zip_name(f'Data-ID-{pk}')
         resp = HttpResponse(
             serialiser.get_value(),
             content_type='application/force-download'
         )
-        resp['Content-Disposition'] = 'attachment; filename="%s"' % 'out.zip'
+        resp['Content-Disposition'] = 'attachment; filename="%s"' % zip_name
         return resp
