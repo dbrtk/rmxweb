@@ -7,17 +7,20 @@ import prometheus_client as promc
 
 from rmxweb.config import PROMETHEUS_JOB, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT
 
-
+# todo(): delete this (CREATE_DOC_PROG_PREFIX)
 CREATE_DOC_PROG_PREFIX = 'create_from_webpage'
+
 PROG_PREFIXES = [
     # this is called when a the function to create Data Objects is called by
     # the scraper, the crawler.
     'create_from_webpage',
 
+    # this is called when the dendrogram is being computed
+    'dendrogram',
 ]
 
-LAST_CALL = 'lastcall'
-SUCCESS = 'succes'
+LAST_CALL = 'last_call'
+SUCCESS = 'success'
 EXCEPTION = 'exception'
 DURATION = 'time'
 
@@ -53,7 +56,8 @@ def trackprogress(dtype: str = None):
         @wraps(func)
         def wrapper(*args, **kwds):
 
-            assert dtype in [CREATE_DOC_PROG_PREFIX]
+            if dtype not in PROG_PREFIXES:
+                raise ValueError(f'"{dtype}" is not in {PROG_PREFIXES}')
             registry = promc.CollectorRegistry()
             containerid = kwds.get('containerid')
 
