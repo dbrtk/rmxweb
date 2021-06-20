@@ -46,9 +46,10 @@ def feats_available(func):
                 'docs_per_feat': docsperfeat,
                 'feats_per_doc': featsperdoc,
                 'container': container,
+                'containerid': container.pk
             }
             out.update(kwds)
-            return func(out)
+            return func(**out)
         celery.send_task(
             config.RMXWEB_TASKS['generate_matrices_remote'],
             kwargs={

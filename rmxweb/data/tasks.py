@@ -1,5 +1,5 @@
 
-from decorators.metrics import trackprogress
+from prom.metrics import trackprogress
 from .models import Data as DataModel
 from rmxweb.celery import celery
 

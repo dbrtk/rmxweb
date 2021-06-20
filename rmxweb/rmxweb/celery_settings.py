@@ -91,6 +91,10 @@ RMXWEB_TASKS = {
 
     'crawl_metrics': 'container.tasks.crawl_metrics',
 
+    'compute_dendrogram': 'graph.receive.compute_dendrogram',
+
+    'compute_dendrogram_callback': 'graph.receive.compute_dendrogram_callback',
+
 }
 
 SCRASYNC_TASKS = {

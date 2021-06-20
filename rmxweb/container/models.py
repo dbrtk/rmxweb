@@ -354,6 +354,7 @@ class CrawlStatus(models.Model):
     container = models.ForeignKey(Container, on_delete=models.CASCADE)
 
 
+# todo(): get rid of the status model. replace it with prometheus
 class FeaturesStatus(models.Model):
     """
     Status object used when computing features.
@@ -428,6 +429,7 @@ class FeaturesStatus(models.Model):
                 containerid=containerid, computing_dendrogram=True)
         except cls.DoesNotExist as _:
             return
+        print('getting the status for dendrogram')
         return obj
 
     @classmethod
@@ -482,3 +484,11 @@ class FeaturesStatus(models.Model):
         """
         return cls.objects.filter(containerid=containerid)
 
+    @staticmethod
+    def check_timestamp(query_set):
+
+        time_zone = pytz.timezone(settings.TIME_ZONE)
+        for record in query_set:
+            if (datetime.datetime.now(time_zone) - record.created) > \
+                    datetime.timedelta(minutes=15):
+                print('THE RECORD SHOULD BE DELETED')

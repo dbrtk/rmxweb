@@ -127,12 +127,14 @@ class Dendrogram(_View):
         if not isinstance(flat, bool):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
+
         if FeaturesStatus.computing_dendrogram_busy(containerid):
             return Response(self.http_resp_for_busy(
                 containerid=containerid,
                 uri=request.get_full_path(),
                 msg='Dendrogram being computed'
             ), status=202)
+
         resp = hierarchical_tree(containerid=containerid, flat=flat)
         if not resp['success']:
             # In this case, the system is busy or there is an issue.

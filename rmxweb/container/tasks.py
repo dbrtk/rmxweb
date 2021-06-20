@@ -4,7 +4,7 @@ import time
 from typing import List
 
 from data.models import Data as DataModel
-from decorators.metrics import CREATE_DOC_PROG_PREFIX
+from prom.metrics import CREATE_DOC_PROG_PREFIX
 from .models import Container, FeaturesStatus
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,

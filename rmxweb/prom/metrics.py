@@ -9,6 +9,12 @@ from rmxweb.config import PROMETHEUS_JOB, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT
 
 
 CREATE_DOC_PROG_PREFIX = 'create_from_webpage'
+PROG_PREFIXES = [
+    # this is called when a the function to create Data Objects is called by
+    # the scraper, the crawler.
+    'create_from_webpage',
+
+]
 
 LAST_CALL = 'lastcall'
 SUCCESS = 'succes'
@@ -37,7 +43,12 @@ def make_success_name(dtype: str = None, containerid: str = None):
 
 
 def trackprogress(dtype: str = None):
+    """ Decorator that tracks the progress of functions. It assumes that the
+    call to the function contains a `containerid` parameter.
 
+    :param dtype: the prefix for the name of the metric
+    :return:
+    """
     def inner(func):
         @wraps(func)
         def wrapper(*args, **kwds):

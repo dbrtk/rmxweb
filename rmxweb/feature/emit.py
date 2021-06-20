@@ -8,22 +8,22 @@ from rmxweb.config import NLP_TASKS
 
 
 @feats_available
-def get_features(reqobj):
+def get_features(containerid: int = None, container=None, feats: int = None,
+                 words: int = None, **_):
     """
     :param containerid:
+    :param container:
     :param feats:
     :param words:
-    :param path:
     :return:
     """
-    container = reqobj['container']
     resp = celery.send_task(
         NLP_TASKS['retrieve_features'],
         kwargs={
-            'containerid': container.pk,
-            'feats': reqobj['feats'],
+            'containerid': containerid,
+            'feats': feats,
             'path': container.get_folder_path(),
-            'words': reqobj['words']
+            'words': words
         }
     ).get()
     if resp:
@@ -31,5 +31,5 @@ def get_features(reqobj):
     else:
         return {
             'success': False,
-            'msg': f'no features for feature number {reqobj["feats"]}'
+            'msg': f'no features for feature number {feats}'
         }

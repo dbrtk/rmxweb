@@ -5,7 +5,7 @@ from container.decorators import feats_available
 
 
 @feats_available
-def graph(reqobj):
+def graph(container=None, feats: int = None, **reqobj):
     """
     Retrieving data (links and nodes) for a force-directed graph. This function
     maps the documents and features to links and nodes.
@@ -17,13 +17,13 @@ def graph(reqobj):
     docsperfeat: int = 5,
     featsperdoc: int = 3
 
-    :param reqobj:
+    :param container:
+    :param feats:
     :return:
     """
     # todo(): delete this. the mapping between features and docs is made on
     #  the level of nlp - that's where edges are created. on this level, links,
     #  edges are extracted from docs and their connections to features.
-    container = reqobj.get('container')
     del reqobj['container']
 
     features, docs = container.get_features(**reqobj)
@@ -72,13 +72,13 @@ def graph(reqobj):
         'success': True,
         'edge': links,
         'node': nodes,
-        'features': reqobj.get('feats'),
+        'features': feats,
         'containerid': container.pk
     }
 
 
 @feats_available
-def get_graph(reqobj):
+def get_graph(container=None, **kwds):
     """
     Retrieving data (links and nodes) for a force-directed graph. This function
     maps the documents and features to links and nodes.
@@ -90,9 +90,7 @@ def get_graph(reqobj):
     docsperfeat: int = 5,
     featsperdoc: int = 3
 
-    :param reqobj:
+    :param container:
     :return:
     """
-    container = reqobj.get('container')
-    del reqobj['container']
-    return container.get_features(**reqobj)
+    return container.get_features(**kwds)
