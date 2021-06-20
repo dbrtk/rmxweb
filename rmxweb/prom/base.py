@@ -39,7 +39,9 @@ class PromBase(abc.ABC):
             )
 
     def delete(self):
-
+        """Deletes records from prometheus.
+        :return:
+        """
         endpoint = 'http://{}/admin/tsdb/delete_series?match={}'.format(
             PROMETHEUS_URL, self.query()
         )
@@ -52,7 +54,7 @@ class PromBase(abc.ABC):
         resp = resp.json()
         return resp.get('data', {}).get('result', [])
 
-    def get_stat_last_call(self):
+    def stat_for_last_call(self):
 
         self.result = self.get()
         if not self.result:
@@ -63,9 +65,10 @@ class PromBase(abc.ABC):
         if not last_call_rec:
             return self.last_call_exception()
         last_call_val = float(last_call_rec['value'][1])
-        if time.time() - SECONDS_AFTER_LAST_CALL > last_call_val:
+        if time.time() - self.time_after_last_call > last_call_val:
             self.ready = True
             # todo(): delete records in prom
+            self.delete()
         return self.response()
 
     def last_call_exception(self):
