@@ -26,9 +26,11 @@ def search_texts(words: typing.List[str] = None, highlight: bool = None,
 
 
 @feats_available
-def hierarchical_tree(containerid=None, flat: bool = None, **_) -> dict:
+def hierarchical_tree(
+        containerid=None, flat: bool = None, container=None, **_) -> dict:
     """
     :param containerid:
+    :param container:
     :param flat:
     :return:
     """
