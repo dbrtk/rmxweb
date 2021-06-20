@@ -1,4 +1,5 @@
-
+"""The base class for all classes handling prometheus metrics.
+"""
 import abc
 import time
 

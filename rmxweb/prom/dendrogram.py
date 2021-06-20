@@ -1,10 +1,11 @@
 
 from .base import PromBase
-
+from .factory import MetricsFactory
 
 COMPUTE_DENDROGRAM_PREFIX = 'compute_dendrogram'
 
 
+@MetricsFactory.set_metrics_cls(metrics_name='dendrogram')
 class ComputeDendrogram(PromBase):
 
     def __init__(self, containerid: int = None):
