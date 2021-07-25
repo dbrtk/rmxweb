@@ -32,7 +32,7 @@ result_backend = f'redis://:{REDIS_PASS}@{BROKER_HOST_NAME}:{REDIS_PORT}/{REDIS_
 
 result_persistent = True
 
-imports = ('container.tasks', 'data.tasks')
+imports = ('container.tasks', 'data.tasks', 'graph.receive')
 
 result_expires = 30
 timezone = 'UTC'
@@ -43,7 +43,7 @@ result_serializer = 'json'
 
 task_routes = {
 
-    re.compile(r'(data|container)\..*'): {'queue': 'rmxweb'},
+    re.compile(r'(data|container|graph)\..*'): {'queue': 'rmxweb'},
 
     'scrasync.*': {'queue': 'scrasync'},
 

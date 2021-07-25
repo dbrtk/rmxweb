@@ -1,18 +1,46 @@
 
 from .base import PromBase
 from .factory import MetricsFactory
+from .incremental import Incremental
 
-COMPUTE_DENDROGRAM_PREFIX = 'compute_dendrogram'
+COMPUTE_DENDROGRAM_PREFIX = 'dendrogram'
 
 
-@MetricsFactory.set_metrics_cls(metrics_name='dendrogram')
-class ComputeDendrogram(PromBase):
+@MetricsFactory.set_metrics_cls(metrics_name=COMPUTE_DENDROGRAM_PREFIX)
+class ComputeDendrogram:
 
+    def __init__(self, containerid: int = None, label: str = None):
+        self.containerid = containerid
+        self.metrics = Incremental(
+            self.containerid, dtype=COMPUTE_DENDROGRAM_PREFIX, label=label
+        )
+        self.v = None
+        self.ready = self.is_ready()
+
+    def is_ready(self):
+        self.v = self.metrics.get_value()
+        if self.v == 0:
+            return True
+        return False
+
+    def response(self):
+        return {
+            'containerid': self.containerid,
+            'ready': self.ready,
+            'busy': not self.ready,
+            'value': self.v,
+            'msg': f'The dendrogram is '
+                   f'{"ready" if self.ready else "being computed"}.'
+        }
+
+
+class DepprComputeDendrogram(PromBase):
+    # todo(): delete this class!
     def __init__(self, containerid: int = None):
 
-        super(ComputeDendrogram, self).__init__()
-
         self.containerid = containerid
+
+        super().__init__()
 
     def del_records(self):
 
@@ -34,7 +62,8 @@ class ComputeDendrogram(PromBase):
             'containerid': self.containerid,
             'ready': self.ready,
             'value': value,
-            'msg': 'An exception',
+            'msg': 'Exception',
+            'error': True,
             'result': self.result
         }
 

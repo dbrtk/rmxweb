@@ -13,17 +13,20 @@ COMPUTE_DENDROGRAM_PREFIX = 'compute_dendrogram'
 
 
 class PromBase(abc.ABC):
-
+    """
+    Base class for prometheus clients.
+    """
     time_after_last_call = SECONDS_AFTER_LAST_CALL
 
     def __init__(self):
 
         self.ready = False
-        self.result = None
 
         self.success_name = self.get_success_name()
         self.exception_name = self.get_exception_name()
         self.last_call_name = self.get_last_call_name()
+
+        self.result = self.get()
 
     def __call__(self, *args, **kwargs):
 
@@ -39,14 +42,23 @@ class PromBase(abc.ABC):
                 job=PROMETHEUS_JOB
             )
 
+    def del_query(self):
+        """Query for deleting series in prom."""
+        pass
+
     def delete(self):
         """Deletes records from prometheus.
         :return:
         """
+        print('deleting the stats')
         endpoint = 'http://{}/admin/tsdb/delete_series?match={}'.format(
             PROMETHEUS_URL, self.query()
         )
-        requests.post(endpoint)
+        print(f'endpoint: {endpoint}')
+
+        resp = requests.post(endpoint)
+        print(resp)
+        print(resp.json())
 
     def get(self):
 
@@ -56,8 +68,14 @@ class PromBase(abc.ABC):
         return resp.get('data', {}).get('result', [])
 
     def stat_for_last_call(self):
+        """This method checks if a record exists in prom and if it was created
+        less than 30 seconds ago. The time is defined in the
+        `time_after_last_call` class variable.
+        """
+        exception = self.last_call_exception()
+        if exception:
+            return self.exception_response(value=exception)
 
-        self.result = self.get()
         if not self.result:
             self.ready = True
             return self.no_results_response()
@@ -72,6 +90,16 @@ class PromBase(abc.ABC):
             self.delete()
         return self.response()
 
+    def check_last_call_exists(self):
+        """This method checks if the records exists in prom."""
+        exception = self.last_call_exception()
+        if exception:
+            return self.exception_response(value=exception)
+        if not self.result:
+            self.ready = True
+            return self.no_results_response()
+        return self.response()
+
     def last_call_exception(self):
         """This is called when there is any `last_called` record in prometheus.
         """
@@ -79,6 +107,10 @@ class PromBase(abc.ABC):
         if exception:
             value = float(exception['value'][1])
             return self.exception_response(value=value)
+        return
+
+    def last_call_success(self):
+        """Returns the last success response."""
         success = self.get_record(name=self.success_name)
         if success:
             value = float(success['value'][1])

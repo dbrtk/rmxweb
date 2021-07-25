@@ -1,11 +1,12 @@
 
-
 from functools import wraps
 import time
 
 import prometheus_client as promc
+from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
+import requests
 
-from rmxweb.config import PROMETHEUS_JOB, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT
+from rmxweb.config import (PROMETHEUS_HOST, PROMETHEUS_JOB, PROMETHEUS_PORT, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT)
 
 # todo(): delete this (CREATE_DOC_PROG_PREFIX)
 CREATE_DOC_PROG_PREFIX = 'create_from_webpage'
@@ -23,6 +24,7 @@ LAST_CALL = 'last_call'
 SUCCESS = 'success'
 EXCEPTION = 'exception'
 DURATION = 'time'
+ACTIVE_PROC = 'active_proc'
 
 
 def make_progress_name(dtype: str = None, containerid: str = None):
@@ -45,6 +47,7 @@ def make_success_name(dtype: str = None, containerid: str = None):
     return f'{dtype}__{SUCCESS}_{containerid}'
 
 
+
 def trackprogress(dtype: str = None):
     """ Decorator that tracks the progress of functions. It assumes that the
     call to the function contains a `containerid` parameter.
@@ -58,7 +61,7 @@ def trackprogress(dtype: str = None):
 
             if dtype not in PROG_PREFIXES:
                 raise ValueError(f'"{dtype}" is not in {PROG_PREFIXES}')
-            registry = promc.CollectorRegistry()
+            registry = CollectorRegistry()
             containerid = kwds.get('containerid')
 
             # print(
@@ -66,7 +69,7 @@ def trackprogress(dtype: str = None):
             #     flush=True
             # )
             try:
-                gtime = promc.Gauge(
+                gtime = Gauge(
                     make_progress_name(dtype, containerid),
                     f'the progress of {dtype}',
                     registry=registry
@@ -74,14 +77,14 @@ def trackprogress(dtype: str = None):
                 with gtime.time():
                     out = func(*args, **kwds)
 
-                gsuccess = promc.Gauge(
+                gsuccess = Gauge(
                     make_success_name(dtype, containerid),
                     f'time of success return on {dtype}',
                     registry=registry
                 )
                 gsuccess.set(time.time())
             except Exception as _:
-                gexcept = promc.Gauge(
+                gexcept = Gauge(
                     make_exception_name(dtype, containerid),
                     f'time of exception on {dtype}',
                     registry=registry
@@ -89,14 +92,14 @@ def trackprogress(dtype: str = None):
                 gexcept.set(time.time())
                 out = None
             finally:
-                last = promc.Gauge(
+                last = Gauge(
                     make_lastcall_name(dtype, containerid),
                     f'time of the last call made to {dtype}',
                     registry=registry
                 )
                 last.set(time.time())
 
-                promc.push_to_gateway(
+                push_to_gateway(
                     f'{PUSHGATEWAY_HOST}:{PUSHGATEWAY_PORT}',
                     job=PROMETHEUS_JOB,
                     registry=registry

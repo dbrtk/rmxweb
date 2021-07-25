@@ -24,14 +24,15 @@ class MetricsFactory:
 
         return wrapper
 
-    def get_metrics(self, metrics_name: str):
+    @classmethod
+    def get_metrics(cls, metrics_name: str):
         """
         Returns a metrics class for a given metrics class name.
         :param metrics_name:
         :return:
         """
-        if metrics_name not in self.metrics:
+        if metrics_name not in cls.metrics:
             raise ValueError(
                 f'{metrics_name} is not defined in available metrics'
             )
-        return self.metrics[metrics_name]
+        return cls.metrics[metrics_name]

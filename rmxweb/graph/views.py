@@ -9,6 +9,8 @@ from container.models import Container, FeaturesStatus
 from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
+from prom.dendrogram import COMPUTE_DENDROGRAM_PREFIX
+from prom.factory import MetricsFactory
 from serialisers import SerialiserFactory
 
 
@@ -128,12 +130,23 @@ class Dendrogram(_View):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
 
-        if FeaturesStatus.computing_dendrogram_busy(containerid):
+        metrics = MetricsFactory.get_metrics(
+            metrics_name=COMPUTE_DENDROGRAM_PREFIX)
+        metrics = metrics(containerid=containerid)
+        stats = metrics.response()
+
+        # print(f'stats response: {stats}')
+        # print(f'ready: {stats.get("ready")}\n')
+
+        if not stats.get('ready'):
             return Response(self.http_resp_for_busy(
                 containerid=containerid,
                 uri=request.get_full_path(),
-                msg='Dendrogram being computed'
+                msg='Dendrogram being computed',
+                payload=stats,
             ), status=202)
+
+        # print(f'\n\n\nCreate or retrieve the hirarchical tree.\n\n\n')
 
         resp = hierarchical_tree(containerid=containerid, flat=flat)
         if not resp['success']:
