@@ -4,17 +4,13 @@ from functools import wraps
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 import requests
 
+from .config import PROG_PREFIXES
 from rmxweb.config import (
     PROMETHEUS_HOST, PROMETHEUS_JOB, PROMETHEUS_PORT, PUSHGATEWAY_HOST,
     PUSHGATEWAY_PORT
 )
 
-PROG_PREFIXES = [
-
-    # this is called when the dendrogram is being computed
-    'dendrogram',
-]
-ACTIVE_PROC = 'active_proc'
+ACTIVE_PROC = 'running_process'
 
 
 def make_active_processes_name(dtype: str, containerid: str):
@@ -23,8 +19,12 @@ def make_active_processes_name(dtype: str, containerid: str):
 
 
 class Incremental:
-
-    def __init__(self, containerid: (int, str), dtype: str, label: str = None):
+    """
+    These are incremental metrics, like the number of requests made to a
+    service. The value is incremented when the endpoint is called and
+    decremented when it finishes processing and returns a value.
+    """
+    def __init__(self, containerid: (int, str), dtype: str, label: str = None, args: list = None, kwds: dict = None):
         """
         :param containerid:
         :param dtype:
@@ -33,9 +33,15 @@ class Incremental:
         if dtype not in PROG_PREFIXES:
             raise ValueError(f'"{dtype}" is not in {PROG_PREFIXES}')
         self.registry = CollectorRegistry()
+        self.params = []
         self.g_name = make_active_processes_name(dtype, containerid)
+        print(f'The Gauge`s name: {self.g_name}')
         self.g = self.gauge()
         self.v = self.get_value()
+        print(f'The Gauge after instantiation: {self.g}; the gauge`s value: {self.g}')
+        self.inc()
+        print(f'th gauge value after inc: {self.get_value()}')
+        print(f'the value as queried from prom: {self.query_value()}')
 
     def gauge(self):
         return Gauge(
@@ -43,6 +49,13 @@ class Incremental:
             'Number of active processes for a task, function.',
             registry=self.registry
         )
+
+    def process_kwds(self, kwds: dict):
+        feats = kwds.get('feats') or kwds.get('features')
+        containerid = kwds.get('containerid')
+        self.params.append(('containerid', containerid))
+        if feats is not None:
+            self.params.append(('feats', feats))
 
     @property
     def endpoint(self):
@@ -56,6 +69,16 @@ class Incremental:
         return resp.json()
 
     def get_value(self):
+        """Retrieve gauge's value."""
+        try:
+            metric = next(_ for _ in self.g.collect() if _.name == self.g_name)
+            print(f'GET_VALUE --------> The metric samples: length: {len(metric.samples)} objects: {metric.samples}')
+            sample = next(_ for _ in metric.samples if _.name == self.g_name)
+        except StopIteration as err:
+            return
+        return sample.value
+
+    def query_value(self):
         resp = self.get_metrics()
         try:
             v = next(
@@ -68,12 +91,16 @@ class Incremental:
 
     def inc(self, n: int = 1):
         """Increment gauge's the value by n."""
-        self.g.set(self.v + n)
+        print(f'\nThe gauge name while  incrementing: {self.g_name}; the current value: {self.v}.\n')
+        # self.g.set(self.v + n)
+        self.g.inc(1)
         self.push()
 
     def dec(self, n: int = 1):
         """Decrement gauge's the value by n."""
-        self.g.set(self.v - n)
+        print(f'\nThe gauge name while  decrementing: {self.g_name}; the current value: {self.v}.\n')
+        # self.g.set(self.v - n)
+        self.g.dec(1)
         self.push()
 
     def push(self):
@@ -94,7 +121,9 @@ def increment(dtype: str = None, label: str = None):
         @wraps(func)
         def wrapper(*args, **kwds):
             containerid = kwds.get('containerid')
+            print(f'\n\ninside the increment decorator with kwds: {kwds}\n\n')
             inst = Incremental(dtype=dtype, containerid=containerid)
+            print(f'INCREMENT -----> the gauge name on the instance: {inst.g_name}\n')
             inst.inc()
             return func(*args, **kwds)
         return wrapper
@@ -102,54 +131,19 @@ def increment(dtype: str = None, label: str = None):
 
 
 def decrement(dtype: str = None, label: str = None):
-
-    def inner(func):
-        @wraps(func)
-        def wrapper(*args, **kwds):
-            containerid = kwds.get('containerid')
-            inst = Incremental(dtype=dtype, containerid=containerid)
-            inst.dec()
-            return func(*args, **kwds)
-        return wrapper
-    return inner
-
-
-def depprecated_increment(dtype: str = None, label: str = None):
     """
     :param dtype:
     :param label:
     :return:
     """
-    # todo(): delete this
     def inner(func):
         @wraps(func)
         def wrapper(*args, **kwds):
             containerid = kwds.get('containerid')
-
-            Incremental(dtype=dtype, containerid=containerid)
-
-            if dtype not in PROG_PREFIXES:
-                raise ValueError(f'"{dtype}" is not in {PROG_PREFIXES}')
-            registry = CollectorRegistry()
-            g_name = make_active_processes_name(dtype, containerid)
-            g = Gauge(
-                g_name,
-                'Number of active processes for a task, function.',
-                registry=registry
-            )
-            endpoint = f'http://{PROMETHEUS_HOST}:{PROMETHEUS_PORT}/api/v1/query?query={{__name__=~"{g_name}",job="{PROMETHEUS_JOB}"}}'
-            resp = requests.get(endpoint)
-            if not resp.ok:
-                raise RuntimeError(resp.text)
-            resp = resp.json()
-            try:
-                v = next(_ for _ in resp['data']['result'] if _['metric']['__name__'] == g_name)
-                v = int(v['value'][1])
-            except StopIteration as _:
-                v = 0
-            g.set(v + 1)
-            g.set_to_current_time()
-            push_to_gateway(f'{PUSHGATEWAY_HOST}:{PUSHGATEWAY_PORT}', job=PROMETHEUS_JOB, registry=registry)
+            print(f'\n\ninside the decrement decorator with kwds: {kwds}\n\n')
+            inst = Incremental(dtype=dtype, containerid=containerid)
+            print(f'DECREMENT ----> the gauge name on the instance: {inst.g_name}\n')
+            inst.dec()
             return func(*args, **kwds)
         return wrapper
     return inner

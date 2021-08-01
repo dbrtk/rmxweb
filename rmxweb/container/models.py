@@ -242,6 +242,7 @@ class Container(models.Model):
         :param feats:
         :return:
         """
+        # todo(): delete in the close future - FeaturesStatus -> Prometheus
         self.crawl_ready = True
         self.save()
         FeaturesStatus.del_status_feats(feats=feats, containerid=self.pk)
@@ -344,6 +345,7 @@ class Container(models.Model):
         self.delete()
 
 
+# todo(): get rid of the status model.
 class CrawlStatus(models.Model):
 
     type = models.CharField(max_length=100)

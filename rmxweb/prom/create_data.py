@@ -1,10 +1,10 @@
 from .base import PromBase
 from .factory import MetricsFactory
 
-CREATE_DATE_PREFIX = 'create_data'
+CREATE_DATA_PREFIX = 'create_data'
 
 
-@MetricsFactory.set_metrics_cls(metrics_name=CREATE_DATE_PREFIX)
+@MetricsFactory.set_metrics_cls(metrics_name=CREATE_DATA_PREFIX)
 class CreateData(PromBase):
 
     def __init__(self, containerid: int = None):
@@ -15,15 +15,15 @@ class CreateData(PromBase):
 
     def get_last_call_name(self):
 
-        return f'{CREATE_DATE_PREFIX}__last_call_{self.containerid}'
+        return f'{CREATE_DATA_PREFIX}__last_call_{self.containerid}'
 
     def get_success_name(self):
 
-        return f'{CREATE_DATE_PREFIX}__success_{self.containerid}'
+        return f'{CREATE_DATA_PREFIX}__success_{self.containerid}'
 
     def get_exception_name(self):
 
-        return f'{CREATE_DATE_PREFIX}__exception_{self.containerid}'
+        return f'{CREATE_DATA_PREFIX}__exception_{self.containerid}'
 
     def response(self, value=None):
 

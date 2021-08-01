@@ -6,7 +6,13 @@ import prometheus_client as promc
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 import requests
 
-from rmxweb.config import (PROMETHEUS_HOST, PROMETHEUS_JOB, PROMETHEUS_PORT, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT)
+from .create_data import CREATE_DATA_PREFIX
+from .compute_matrix import COMPUTE_MATRIX_PREFIX
+from .dendrogram import COMPUTE_DENDROGRAM_PREFIX
+from rmxweb.config import (
+    PROMETHEUS_HOST, PROMETHEUS_JOB, PROMETHEUS_PORT, PUSHGATEWAY_HOST,
+    PUSHGATEWAY_PORT
+)
 
 # todo(): delete this (CREATE_DOC_PROG_PREFIX)
 CREATE_DOC_PROG_PREFIX = 'create_from_webpage'
@@ -14,10 +20,13 @@ CREATE_DOC_PROG_PREFIX = 'create_from_webpage'
 PROG_PREFIXES = [
     # this is called when a the function to create Data Objects is called by
     # the scraper, the crawler.
-    'create_from_webpage',
+    CREATE_DATA_PREFIX,  # - create_from_webpage
 
     # this is called when the dendrogram is being computed
-    'dendrogram',
+    COMPUTE_DENDROGRAM_PREFIX,  # - dendrogram
+
+    # this is the prefix for the tasks computing network graphs
+    COMPUTE_MATRIX_PREFIX,  # - compute_matrix
 ]
 
 LAST_CALL = 'last_call'
@@ -45,7 +54,6 @@ def make_exception_name(dtype: str = None, containerid: str = None):
 def make_success_name(dtype: str = None, containerid: str = None):
 
     return f'{dtype}__{SUCCESS}_{containerid}'
-
 
 
 def trackprogress(dtype: str = None):

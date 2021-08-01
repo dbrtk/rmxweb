@@ -4,6 +4,8 @@ import time
 from typing import List
 
 from data.models import Data as DataModel
+from prom.compute_matrix import COMPUTE_MATRIX_PREFIX
+from prom.incremental import decrement, increment
 from prom.metrics import CREATE_DOC_PROG_PREFIX
 from .models import Container, FeaturesStatus
 from rmxweb.config import (
@@ -24,6 +26,7 @@ class __Error(Error):
 
 
 @celery.task(bind=True)
+@increment(dtype=COMPUTE_MATRIX_PREFIX)
 def generate_matrices_remote(
         self,
         containerid: str = None,
@@ -36,6 +39,7 @@ def generate_matrices_remote(
         on its own machine.
     """
     container = Container.get_object(pk=containerid)
+    print(f'\n\n\ngenerate matrices remote: containerid: {containerid}\n\n\n')
     FeaturesStatus.set_status_feats(
         containerid=container.pk,
         busy=True,
@@ -56,11 +60,13 @@ def generate_matrices_remote(
 
 
 @celery.task
+@decrement(dtype=COMPUTE_MATRIX_PREFIX)
 def nlp_callback_success(**kwds):
     """Called when a nlp callback is sent to proximitybot.
 
        This task is called by the nlp container.
     """
+    print(f'\n\n\ncalled nlp_callback_succes; decrement the gauge.\n\n')
     container = Container.get_object(pk=kwds.get('containerid'))
     container.update_on_nlp_callback(feats=kwds.get('feats'))
 
@@ -299,17 +305,3 @@ def test_task(a: int = None, b: int = None) -> dict:
     return {
         'sum': a + b
     }
-
-
-# @celery.task
-# def compute_dendrogram(containerid: int = None):
-#     """Called when NLP starts computing the dendrogram."""
-#     # todo(): delete this.
-#     FeaturesStatus.set_status_dendrogram(containerid=containerid)
-#
-#
-# @celery.task
-# def compute_dendrogram_callback(containerid: int = None):
-#     """Called when the dendrogram is computed."""
-#     # todo(): delete this.
-#     FeaturesStatus.del_status_dendrogram(containerid=containerid)

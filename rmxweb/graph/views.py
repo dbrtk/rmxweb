@@ -11,6 +11,7 @@ from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
 from prom.dendrogram import COMPUTE_DENDROGRAM_PREFIX
 from prom.factory import MetricsFactory
+from prom.compute_matrix import COMPUTE_MATRIX_PREFIX
 from serialisers import SerialiserFactory
 
 
@@ -64,7 +65,13 @@ class Graph(_View):
         :param uri:
         :return:
         """
-        if FeaturesStatus.computing_feats_busy(containerid, features):
+        metrics = MetricsFactory.get_metrics(
+            metrics_name=COMPUTE_MATRIX_PREFIX)
+        metrics = metrics(containerid=containerid)
+        stats = metrics.response()
+        print(f'\nthe stats for graph / matrix computation: {stats}\n')
+        # if FeaturesStatus.computing_feats_busy(containerid, features):
+        if not stats.get('ready'):
             return Response(
                 super().http_resp_for_busy(
                     containerid=containerid,

@@ -1,50 +1,30 @@
 
-from .base import PromBase
+from .base import BaseIncremental, PromBase
 from .factory import MetricsFactory
-from .incremental import Incremental
 
 COMPUTE_DENDROGRAM_PREFIX = 'dendrogram'
 
 
 @MetricsFactory.set_metrics_cls(metrics_name=COMPUTE_DENDROGRAM_PREFIX)
-class ComputeDendrogram:
+class ComputeDendrogram(PromBase):
 
-    def __init__(self, containerid: int = None, label: str = None):
-        self.containerid = containerid
-        self.metrics = Incremental(
-            self.containerid, dtype=COMPUTE_DENDROGRAM_PREFIX, label=label
-        )
-        self.v = None
-        self.ready = self.is_ready()
-
-    def is_ready(self):
-        self.v = self.metrics.get_value()
-        if self.v == 0:
-            return True
-        return False
-
-    def response(self):
-        return {
-            'containerid': self.containerid,
-            'ready': self.ready,
-            'busy': not self.ready,
-            'value': self.v,
-            'msg': f'The dendrogram is '
-                   f'{"ready" if self.ready else "being computed"}.'
-        }
-
-
-class DepprComputeDendrogram(PromBase):
-    # todo(): delete this class!
     def __init__(self, containerid: int = None):
 
+        super(ComputeDendrogram, self).__init__()
+
         self.containerid = containerid
 
-        super().__init__()
+    def get_last_call_name(self):
 
-    def del_records(self):
+        return f'{COMPUTE_DENDROGRAM_PREFIX}__last_call_{self.containerid}'
 
-        pass
+    def get_success_name(self):
+
+        return f'{COMPUTE_DENDROGRAM_PREFIX}__success_{self.containerid}'
+
+    def get_exception_name(self):
+
+        return f'{COMPUTE_DENDROGRAM_PREFIX}__exception_{self.containerid}'
 
     def response(self, value=None):
 
@@ -76,14 +56,18 @@ class DepprComputeDendrogram(PromBase):
             'containerid': self.containerid
         }
 
-    def get_last_call_name(self):
 
-        return f'{COMPUTE_DENDROGRAM_PREFIX}__last_call_{self.containerid}'
+# @MetricsFactory.set_metrics_cls(metrics_name=COMPUTE_DENDROGRAM_PREFIX)
+class IncrementalComputeDendrogram(BaseIncremental):
 
-    def get_success_name(self):
+    prefix = COMPUTE_DENDROGRAM_PREFIX
 
-        return f'{COMPUTE_DENDROGRAM_PREFIX}__success_{self.containerid}'
-
-    def get_exception_name(self):
-
-        return f'{COMPUTE_DENDROGRAM_PREFIX}__exception_{self.containerid}'
+    def response(self):
+        return {
+            'containerid': self.containerid,
+            'ready': self.ready,
+            'busy': not self.ready,
+            'value': self.v,
+            'msg': f'The dendrogram is '
+                   f'{"ready" if self.ready else "being computed"}.'
+        }

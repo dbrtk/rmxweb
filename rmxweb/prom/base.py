@@ -5,6 +5,7 @@ import time
 
 import requests
 
+from .incremental import Incremental
 from rmxweb.config import (PROMETHEUS_JOB, PROMETHEUS_URL,
                            SECONDS_AFTER_LAST_CALL)
 
@@ -163,3 +164,22 @@ class PromBase(abc.ABC):
     def get_exception_name(self):
 
         raise NotImplementedError('a `get_exception_name` method is required')
+
+
+class BaseIncremental(abc.ABC):
+
+    prefix = None
+
+    def __init__(self, containerid: int = None, label: str = None):
+        self.containerid = containerid
+        self.metrics = Incremental(
+            self.containerid, dtype=self.prefix, label=label
+        )
+        self.v = None
+        self.ready = self.is_ready()
+
+    def is_ready(self):
+        self.v = self.metrics.get_value()
+        if self.v == 0:
+            return True
+        return False
