@@ -1,6 +1,8 @@
 """Metrics factory."""
 
 
+# todo(): delete the module
+
 class MetricsFactory:
     """Metrics Factory registers all metrics classes that are available.
     """

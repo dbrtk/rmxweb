@@ -3,7 +3,6 @@
 import typing
 
 from container.decorators import feats_available
-from prom.metrics import trackprogress
 from rmxweb.celery import celery
 from rmxweb.config import NLP_TASKS, RMXGREP_TASK
 

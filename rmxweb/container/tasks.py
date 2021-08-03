@@ -4,9 +4,11 @@ import time
 from typing import List
 
 from data.models import Data as DataModel
-from prom.compute_matrix import COMPUTE_MATRIX_PREFIX
-from prom.incremental import decrement, increment
-from prom.metrics import CREATE_DOC_PROG_PREFIX
+from prom.track_progress import (
+    COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX, track_progress
+)
+
+
 from .models import Container, FeaturesStatus
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
@@ -26,7 +28,6 @@ class __Error(Error):
 
 
 @celery.task(bind=True)
-@increment(dtype=COMPUTE_MATRIX_PREFIX)
 def generate_matrices_remote(
         self,
         containerid: str = None,
@@ -39,7 +40,6 @@ def generate_matrices_remote(
         on its own machine.
     """
     container = Container.get_object(pk=containerid)
-    print(f'\n\n\ngenerate matrices remote: containerid: {containerid}\n\n\n')
     FeaturesStatus.set_status_feats(
         containerid=container.pk,
         busy=True,
@@ -60,7 +60,7 @@ def generate_matrices_remote(
 
 
 @celery.task
-@decrement(dtype=COMPUTE_MATRIX_PREFIX)
+@track_progress(dtype=COMPUTE_MATRIX_PREFIX)
 def nlp_callback_success(**kwds):
     """Called when a nlp callback is sent to proximitybot.
 
@@ -232,6 +232,7 @@ def monitor_crawl(containerid: int = None, crawlid: str = None):
     )
 
 
+# todo(): delete this should be in prom
 @celery.task
 def crawl_metrics(containerid: int = None):
     """
@@ -257,9 +258,9 @@ def crawl_metrics(containerid: int = None):
     """
     ready = False
 
-    exception = f'{CREATE_DOC_PROG_PREFIX}__exception_{containerid}'
-    success = f'{CREATE_DOC_PROG_PREFIX}__succes_{containerid}'
-    lastcall = f'{CREATE_DOC_PROG_PREFIX}__lastcall_{containerid}'
+    exception = f'{CREATE_DATA_PREFIX}__exception_{containerid}'
+    success = f'{CREATE_DATA_PREFIX}__succes_{containerid}'
+    lastcall = f'{CREATE_DATA_PREFIX}__lastcall_{containerid}'
     query = '{{__name__=~"{success}|{lastcall}|{exception}",job="{job}"}}'\
         .format(
             success=success,

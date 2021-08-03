@@ -9,9 +9,10 @@ from container.models import Container, FeaturesStatus
 from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
-from prom.dendrogram import COMPUTE_DENDROGRAM_PREFIX
+
+from prom.track_progress import COMPUTE_DENDROGRAM_PREFIX, COMPUTE_MATRIX_PREFIX, QueryPrometheus
+
 from prom.factory import MetricsFactory
-from prom.compute_matrix import COMPUTE_MATRIX_PREFIX
 from serialisers import SerialiserFactory
 
 
@@ -65,10 +66,11 @@ class Graph(_View):
         :param uri:
         :return:
         """
-        metrics = MetricsFactory.get_metrics(
-            metrics_name=COMPUTE_MATRIX_PREFIX)
-        metrics = metrics(containerid=containerid)
-        stats = metrics.response()
+        metrics = QueryPrometheus(containerid=containerid, dtype=COMPUTE_MATRIX_PREFIX, features=features)
+        # metrics = metrics(containerid=containerid)
+        stats = metrics.stat_for_last_call()
+        import pdb ; pdb.set_trace()
+
         print(f'\nthe stats for graph / matrix computation: {stats}\n')
         # if FeaturesStatus.computing_feats_busy(containerid, features):
         if not stats.get('ready'):
@@ -137,11 +139,12 @@ class Dendrogram(_View):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
 
-        metrics = MetricsFactory.get_metrics(
-            metrics_name=COMPUTE_DENDROGRAM_PREFIX)
-        metrics = metrics(containerid=containerid)
-        stats = metrics.response()
-
+        metrics = QueryPrometheus(containerid=containerid, dtype=COMPUTE_MATRIX_PREFIX)
+        # metrics = MetricsFactory.get_metrics(
+        #     metrics_name=COMPUTE_DENDROGRAM_PREFIX)
+        # metrics = metrics(containerid=containerid)
+        stats = metrics.stat_for_last_call()
+        print(f"The metrics: {stats}\n")
         # print(f'stats response: {stats}')
         # print(f'ready: {stats.get("ready")}\n')
 
