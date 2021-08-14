@@ -35,7 +35,7 @@ PROG_PREFIXES = [
 
 class BasePrometheus(abc.ABC):
 
-    def __init__(self, *args, dtype: str = None, label: str = None, **kwds):
+    def __init__(self, *args, dtype: str = None, **kwds):
 
         self.dtype = dtype
         if self.dtype not in PROG_PREFIXES:
@@ -43,6 +43,16 @@ class BasePrometheus(abc.ABC):
 
         self.containerid = None
         self.features = None
+        self.func_name = None
+
+    def get_labels(self):
+        # todo(): delete this!
+        labels = {"function": self.func_name}
+        if self.containerid is not None:
+            labels["containerid"] = self.containerid
+        if self.features is not None:
+            labels["features"] = self.features
+        return labels
 
     @property
     def gname_suffix(self):
@@ -70,25 +80,38 @@ class BasePrometheus(abc.ABC):
 
 class TrackProgress(BasePrometheus):
 
-    def __init__(self, dtype: str = None, label: str = None):
-        super(TrackProgress, self).__init__(dtype=dtype, label=label)
+    def __init__(self, dtype: str = None):
+        print(f"DECORATING - Instantiating the TrackProgress class and decorating a function.")
+        super(TrackProgress, self).__init__(dtype=dtype)
         self.registry = None
 
     def __call__(self, func):
 
-        self.registry = CollectorRegistry()
+        self.func_name = func.__name__
+        print(f"\n\n\nDECORATING {func.__name__} ================.>>>>>>>>>>")
+        print(f"Inside the TrackProgress.__call__; func name: {self.func_name}")
+
         update_wrapper(self, func)
 
         def wrapper(*args, **kwds):
+            print(f"DECORATING inside the wrapper. args: {args}; kwds: {kwds}")
             self.process_parameters(**kwds)
             return self.run(func, *args, **kwds)
         return wrapper
 
     def process_parameters(self, **kwds):
-        self.containerid = kwds.get('containerid')
+        if "containerid" in kwds:
+            self.containerid = kwds.get('containerid')
+        elif "container" in kwds:
+            self.containerid = kwds["container"].pk
         self.features = kwds.get('features') or kwds.get('feats')
 
+    def set_labels(self, g: Gauge = None):
+        # todo(): delete this!
+        return g.labels(**self.get_labels())
+
     def run(self, func, *args, **kwds):
+        self.registry = CollectorRegistry()
         try:
             gtime = Gauge(
                 self.progress_name,
@@ -103,13 +126,16 @@ class TrackProgress(BasePrometheus):
                 registry=self.registry
             )
             gsuccess.set(time.time())
+            # gsuccess.set_to_current_time()
         except Exception as _:
+            print(f"Exception: {_}")
             gexcept = Gauge(
                 self.exception_name,
                 f'time of exception on {self.dtype}',
                 registry=self.registry
             )
             gexcept.set(time.time())
+            # gexcept.set_to_current_time()
             out = None
         finally:
             last = Gauge(
@@ -118,6 +144,7 @@ class TrackProgress(BasePrometheus):
                 registry=self.registry
             )
             last.set(time.time())
+            # last.set_to_current_time()
             self.push()
         return out
 
@@ -155,6 +182,7 @@ class QueryPrometheus(BasePrometheus):
     def get_metrics(self):
         q = self.prom_query()
         endpoint = f'http://{PROMETHEUS_URL}/query?query={q}'
+        print(f"\n\n\nget_metrics=====>>>>endpoint: {endpoint}; q: {q}\n\n\n")
         resp = requests.get(endpoint)
         resp = resp.json()
         return resp.get('data', {}).get('result', [])

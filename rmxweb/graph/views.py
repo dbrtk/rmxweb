@@ -69,11 +69,15 @@ class Graph(_View):
         metrics = QueryPrometheus(containerid=containerid, dtype=COMPUTE_MATRIX_PREFIX, features=features)
         # metrics = metrics(containerid=containerid)
         stats = metrics.stat_for_last_call()
-        import pdb ; pdb.set_trace()
 
-        print(f'\nthe stats for graph / matrix computation: {stats}\n')
+        print(f"\n\n\nGenerating the graph")
+        print(f'the stats for graph / matrix computation: {stats}; '
+              f'ready: {stats.get("ready")}; not ready: '
+              f'{not stats.get("ready")}\n')
+
         # if FeaturesStatus.computing_feats_busy(containerid, features):
         if not stats.get('ready'):
+            print(f"STATS SAY: GRAPH NOT READY YET - HOWEVER...")
             return Response(
                 super().http_resp_for_busy(
                     containerid=containerid,

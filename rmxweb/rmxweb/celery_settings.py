@@ -66,8 +66,9 @@ RMXWEB_TASKS = {
 
     'test_task': 'rmxweb.container.tasks.test_task',
 
-    'generate_matrices_remote':
-        'container.tasks.generate_matrices_remote',
+    # todo(): delete this
+    # 'generate_matrices_remote':
+    #     'container.tasks.generate_matrices_remote',
 
     'nlp_callback_success': 'container.tasks.nlp_callback_success',
 

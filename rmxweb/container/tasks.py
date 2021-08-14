@@ -27,18 +27,40 @@ class __Error(Error):
     pass
 
 
-@celery.task(bind=True)
+# def dec(func):
+#     # todo(): delete - this is a test decorator
+#     def wrapper(*args, **kwds):
+#
+#         print('\n\n\nDCEORATOR')
+#         print(f"exec decorated function: {func.__name__}")
+#         print(f"args: {args}; kwds: {kwds}")
+#         return func(*args, **kwds)
+#     return wrapper
+
+
+@track_progress(dtype=COMPUTE_MATRIX_PREFIX)
+@celery.task
 def generate_matrices_remote(
-        self,
         containerid: str = None,
         feats: int = 10,
         words: int = 6,
         vectors_path: str = None,
         docs_per_feat: int = 0,
         feats_per_doc: int = 3):
-    """ Generating matrices on the remote server. This is used when nlp lives
-        on its own machine.
     """
+    Generating matrices on the remote server.
+
+    :param self:
+    :param containerid:
+    :param feats:
+    :param words:
+    :param vectors_path:
+    :param docs_per_feat:
+    :param feats_per_doc:
+    :return:
+    """
+    # todo(): delete!
+    print(f'\n\n\ncalled generate_matrices_remote; containerid: {containerid}; features: {feats}.\n\n')
     container = Container.get_object(pk=containerid)
     FeaturesStatus.set_status_feats(
         containerid=container.pk,
@@ -59,17 +81,24 @@ def generate_matrices_remote(
         celery.send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
 
 
-@celery.task
 @track_progress(dtype=COMPUTE_MATRIX_PREFIX)
-def nlp_callback_success(**kwds):
-    """Called when a nlp callback is sent to proximitybot.
-
-       This task is called by the nlp container.
+def _nlp_callback_success(**kwds):
     """
-    print(f'\n\n\ncalled nlp_callback_succes; decrement the gauge.\n\n')
+    Called when NLp finishes computing the graphs, all the necessary objects.
+    """
+    print(f"Called NLP callback success. kwds: {kwds}")
     container = Container.get_object(pk=kwds.get('containerid'))
     container.update_on_nlp_callback(feats=kwds.get('feats'))
 
+
+@celery.task
+def nlp_callback_success(**kwds):
+    """
+    Called when a nlp callback is sent to proximitybot. This task is called by
+    the nlp container.
+    """
+    print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
+    _nlp_callback_success(**kwds)
 
 # @celery.task
 # def file_extract_callback(kwds: dict = None):

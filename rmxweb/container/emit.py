@@ -1,6 +1,12 @@
 """Emitting miscellaneous messages to the world (other services) through
    celery/rabbitmq.
 """
+import os
+
+from prom.track_progress import (
+    COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX, track_progress
+)
+
 
 from rmxweb.celery import celery
 from rmxweb.config import (
@@ -53,3 +59,46 @@ def get_features(feats: int = 10,
             'feats_per_doc': feats_per_doc
         }
     ).get()
+
+
+@track_progress(dtype=COMPUTE_MATRIX_PREFIX)
+def generate_matrices_remote(
+        container=None,
+        feats: int = 10,
+        words: int = 6,
+        vectors_path: str = None,
+        docs_per_feat: int = 0,
+        feats_per_doc: int = 3):
+    """
+    Generating matrices on the remote server.
+
+    :param self:
+    :param container: instance of Container
+    :param feats:
+    :param words:
+    :param vectors_path:
+    :param docs_per_feat:
+    :param feats_per_doc:
+    :return:
+    """
+    containerid = container.pk
+    print(f'\n\n\ncalled generate_matrices_remote; containerid: {containerid}; features: {feats}.\n\n')
+    # todo(): delete this
+    # FeaturesStatus.set_status_feats(
+    #     containerid=container.pk,
+    #     busy=True,
+    #     feats=feats,
+    # )
+
+    kwds = {
+        'containerid': containerid,
+        'feats': int(feats),
+        'words': words,
+        'docs_per_feat': int(docs_per_feat),
+        'feats_per_doc': int(feats_per_doc),
+        'path': container.get_folder_path(),
+    }
+    if os.path.isfile(vectors_path):
+        celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
+    else:
+        celery.send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
