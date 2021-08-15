@@ -9,7 +9,7 @@ def compute_dendrogram(containerid: int = None):
     task is sent to NLP.
 
     This function is a placeholder; it is used to make sure that the progress
-    is tracked by prometheus. So, it is decorated with trackprogress.
+    is tracked by prometheus. So, it is decorated with prom's track_progress.
     """
     return
 

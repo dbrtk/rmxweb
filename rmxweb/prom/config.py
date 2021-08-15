@@ -1,8 +1,21 @@
+CREATE_DATA_PREFIX = "create_data"
+COMPUTE_MATRIX_PREFIX = "compute_matrix"
+COMPUTE_DENDROGRAM_PREFIX = "compute_dendrogram"
+
+LAST_CALL = 'last_call'
+SUCCESS = 'success'
+EXCEPTION = 'exception'
+DURATION = 'time'
+ACTIVE_PROC = 'active_proc'
+
 PROG_PREFIXES = [
+    # this is called when a the function to create Data Objects is called by
+    # the scraper, the crawler.
+    CREATE_DATA_PREFIX,  # - create_from_webpage
 
     # this is called when the dendrogram is being computed
-    'dendrogram',
+    COMPUTE_DENDROGRAM_PREFIX,  # - dendrogram
 
-    # this one is for computing graphs
-    'compute_matrix',
+    # this is the prefix for the tasks computing network graphs
+    COMPUTE_MATRIX_PREFIX,  # - compute_matrix
 ]

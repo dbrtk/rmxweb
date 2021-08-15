@@ -9,10 +9,11 @@ from container.models import Container, FeaturesStatus
 from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
-
-from prom.track_progress import COMPUTE_DENDROGRAM_PREFIX, COMPUTE_MATRIX_PREFIX, QueryPrometheus
-
-from prom.factory import MetricsFactory
+from prom.track_progress import (
+    COMPUTE_DENDROGRAM_PREFIX,
+    COMPUTE_MATRIX_PREFIX,
+    QueryPrometheus,
+)
 from serialisers import SerialiserFactory
 
 
@@ -71,7 +72,6 @@ class Graph(_View):
             dtype=COMPUTE_MATRIX_PREFIX,
             features=features
         )
-        # metrics = metrics(containerid=containerid)
         stats = metrics.stat_for_last_call()
 
         print(f"\n\n\nGenerating the graph")
@@ -79,7 +79,6 @@ class Graph(_View):
               f'ready: {stats.get("ready")}; not ready: '
               f'{not stats.get("ready")}\n')
 
-        # if FeaturesStatus.computing_feats_busy(containerid, features):
         if not stats.get('ready'):
             print(f"STATS SAY: GRAPH NOT READY YET - HOWEVER...")
             return Response(
@@ -151,10 +150,6 @@ class Dendrogram(_View):
             containerid=containerid,
             dtype=COMPUTE_DENDROGRAM_PREFIX
         )
-        # metrics = MetricsFactory.get_metrics(
-        #     metrics_name=COMPUTE_DENDROGRAM_PREFIX)
-        # metrics = metrics(containerid=containerid)
-
         stats = metrics.stat_for_last_call()
         print(f"The metrics: {stats}\n")
 
@@ -165,8 +160,6 @@ class Dendrogram(_View):
                 msg='Dendrogram being computed',
                 payload=stats,
             ), status=202)
-
-        # print(f'\n\n\nCreate or retrieve the hirarchical tree.\n\n\n')
 
         resp = hierarchical_tree(containerid=containerid, flat=flat)
         if not resp['success']:
