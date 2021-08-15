@@ -112,6 +112,7 @@ class Container(models.Model):
 
     def set_crawl_ready(self, value: bool = True):
         """Called after starting or finishing the crawl."""
+        # todo(): review and delete!
         self.crawl_ready = value
         if value:
             if not self.integrity_check_in_progress:

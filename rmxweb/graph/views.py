@@ -66,7 +66,11 @@ class Graph(_View):
         :param uri:
         :return:
         """
-        metrics = QueryPrometheus(containerid=containerid, dtype=COMPUTE_MATRIX_PREFIX, features=features)
+        metrics = QueryPrometheus(
+            containerid=containerid,
+            dtype=COMPUTE_MATRIX_PREFIX,
+            features=features
+        )
         # metrics = metrics(containerid=containerid)
         stats = metrics.stat_for_last_call()
 
@@ -143,14 +147,16 @@ class Dendrogram(_View):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
 
-        metrics = QueryPrometheus(containerid=containerid, dtype=COMPUTE_MATRIX_PREFIX)
+        metrics = QueryPrometheus(
+            containerid=containerid,
+            dtype=COMPUTE_DENDROGRAM_PREFIX
+        )
         # metrics = MetricsFactory.get_metrics(
         #     metrics_name=COMPUTE_DENDROGRAM_PREFIX)
         # metrics = metrics(containerid=containerid)
+
         stats = metrics.stat_for_last_call()
         print(f"The metrics: {stats}\n")
-        # print(f'stats response: {stats}')
-        # print(f'ready: {stats.get("ready")}\n')
 
         if not stats.get('ready'):
             return Response(self.http_resp_for_busy(

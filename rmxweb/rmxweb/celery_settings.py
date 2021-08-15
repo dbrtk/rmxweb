@@ -72,7 +72,8 @@ RMXWEB_TASKS = {
 
     'nlp_callback_success': 'container.tasks.nlp_callback_success',
 
-    'file_extract_callback': 'container.tasks.file_extract_callback',
+    # todo(): delete this
+    # 'file_extract_callback': 'container.tasks.file_extract_callback',
 
     'integrity_check': 'container.tasks.integrity_check',
 

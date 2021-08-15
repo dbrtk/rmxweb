@@ -86,7 +86,7 @@ def _nlp_callback_success(**kwds):
     """
     Called when NLp finishes computing the graphs, all the necessary objects.
     """
-    print(f"Called NLP callback success. kwds: {kwds}")
+    # print(f"Called NLP callback success. kwds: {kwds}")
     container = Container.get_object(pk=kwds.get('containerid'))
     container.update_on_nlp_callback(feats=kwds.get('feats'))
 
@@ -97,48 +97,9 @@ def nlp_callback_success(**kwds):
     Called when a nlp callback is sent to proximitybot. This task is called by
     the nlp container.
     """
-    print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
+    # print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
     _nlp_callback_success(**kwds)
 
-# @celery.task
-# def file_extract_callback(kwds: dict = None):
-#     """ Called after creating a data object from an uploaded file.
-#     # todo(): delete this!
-#     :param kwds:
-#     :return:
-#     """
-#     # todo(): delete this task - don't use file upload
-#     corpusid = kwds.get('corpusid')
-#     data_id = kwds.get('data_id')
-#     file_id = kwds.get('file_id')
-#     file_name = kwds.get('file_name')
-#     success = kwds.get('success')
-#     texthash = kwds.get('texthash')
-#     if success and data_id:
-#         insert_urlobj(
-#             corpusid,
-#             {
-#                 'data_id': data_id,
-#                 'file_id': file_id,
-#                 'texthash': texthash,
-#                 'title': file_name,
-#             }
-#         )
-#     doc = Container.file_extract_callback(
-#         containerid=corpusid, unique_file_id=file_id)
-#
-#     if not doc['expected_files']:
-#         if doc.matrix_exists:
-#
-#             celery.send_task(
-#                 RMXWEB_TASKS['integrity_check'],
-#                 kwargs={
-#                     'containerid': corpusid
-#                 }
-#             )
-#         else:
-#             set_crawl_ready(corpusid, True)
-#
 
 @celery.task
 def integrity_check(containerid: str = None):
