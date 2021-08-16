@@ -1,21 +1,18 @@
 
-import os
 import time
 from typing import List
 
+import requests
+
 from data.models import Data as DataModel
-from prom.track_progress import (
-    COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX, track_progress
-)
-
-
-from .models import Container, FeaturesStatus
+from .models import Container
+from prom.config import COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX
+from prom.decorator import track_progress, trackprogress
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
     PROMETHEUS_JOB, PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS,
     SECONDS_AFTER_LAST_CALL
 )
-import requests
 from rmxweb.celery import celery
 
 
@@ -27,78 +24,16 @@ class __Error(Error):
     pass
 
 
-# def dec(func):
-#     # todo(): delete - this is a test decorator
-#     def wrapper(*args, **kwds):
-#
-#         print('\n\n\nDCEORATOR')
-#         print(f"exec decorated function: {func.__name__}")
-#         print(f"args: {args}; kwds: {kwds}")
-#         return func(*args, **kwds)
-#     return wrapper
-
-
-@track_progress(dtype=COMPUTE_MATRIX_PREFIX)
 @celery.task
-def generate_matrices_remote(
-        containerid: str = None,
-        feats: int = 10,
-        words: int = 6,
-        vectors_path: str = None,
-        docs_per_feat: int = 0,
-        feats_per_doc: int = 3):
-    """
-    Generating matrices on the remote server.
-
-    :param self:
-    :param containerid:
-    :param feats:
-    :param words:
-    :param vectors_path:
-    :param docs_per_feat:
-    :param feats_per_doc:
-    :return:
-    """
-    # todo(): delete!
-    print(f'\n\n\ncalled generate_matrices_remote; containerid: {containerid}; features: {feats}.\n\n')
-    container = Container.get_object(pk=containerid)
-    FeaturesStatus.set_status_feats(
-        containerid=container.pk,
-        busy=True,
-        feats=feats,
-    )
-    kwds = {
-        'containerid': containerid,
-        'feats': int(feats),
-        'words': words,
-        'docs_per_feat': int(docs_per_feat),
-        'feats_per_doc': int(feats_per_doc),
-        'path': container.get_folder_path(),
-    }
-    if os.path.isfile(vectors_path):
-        celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
-    else:
-        celery.send_task(NLP_TASKS['compute_matrices'], kwargs=kwds)
-
-
-@track_progress(dtype=COMPUTE_MATRIX_PREFIX)
-def _nlp_callback_success(**kwds):
-    """
-    Called when NLp finishes computing the graphs, all the necessary objects.
-    """
-    # print(f"Called NLP callback success. kwds: {kwds}")
-    container = Container.get_object(pk=kwds.get('containerid'))
-    container.update_on_nlp_callback(feats=kwds.get('feats'))
-
-
-@celery.task
+@trackprogress(dtype=COMPUTE_MATRIX_PREFIX)
 def nlp_callback_success(**kwds):
     """
     Called when a nlp callback is sent to proximitybot. This task is called by
     the nlp container.
     """
-    # print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
-    _nlp_callback_success(**kwds)
+    print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
+    container = Container.get_object(pk=kwds.get('containerid'))
+    container.update_on_nlp_callback(feats=kwds.get('feats'))
 
 
 @celery.task
@@ -138,42 +73,6 @@ def delete_data_from_container(
             RMXWEB_TASKS['integrity_check'],
             kwargs={'containerid': containerid}
         )
-
-
-# @celery.task
-# def expected_files(corpusid: str = None, file_objects: list = None):
-#     """Updates the container with expected files that are processed."""
-#     # todo(): delete this
-#     Container.update_expected_files(
-#         containerid=corpusid, file_objects=file_objects)
-#
-#     corpus = Container.get_object(pk=corpusid)
-#     return {
-#         'corpusid': corpusid,
-#         # 'vectors_path': corpus.get_vectors_path(),
-#         'corpus_files_path': corpus.texts_path(),
-#         # 'matrix_path': corpus.matrix_path,
-#         # 'wf_path': corpus.wf_path,
-#     }
-#
-#
-# @celery.task
-# def create_from_upload(name: str = None, file_objects: list = None):
-#     """Creating a container from file upload."""
-#     # todo(): delete this
-#     docid = str(Container.inst_new_doc(name=name))
-#     corpus = Container.get_object(pk=docid)
-#     corpus['expected_files'] = file_objects
-#     corpus['data_from_files'] = True
-#
-#     # todo(): set status to busy
-#     corpus.save()
-#
-#     return {
-#         'corpusid': docid,
-#         # 'corpus_path': corpus.get_corpus_path(),
-#         'corpus_files_path': corpus.texts_path()
-#     }
 
 
 @celery.task

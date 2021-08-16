@@ -1,5 +1,10 @@
 CREATE_DATA_PREFIX = "create_data"
+
 COMPUTE_MATRIX_PREFIX = "compute_matrix"
+
+COMPUTE_MATRIX_RUN = "compute_matrix_run"
+COMPUTE_MATRIX_CALLBACK = "compute_matrix_callback"
+
 COMPUTE_DENDROGRAM_PREFIX = "compute_dendrogram"
 
 LAST_CALL = 'last_call'

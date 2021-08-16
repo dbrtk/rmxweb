@@ -1,5 +1,6 @@
 
-from prom.track_progress import COMPUTE_DENDROGRAM_PREFIX, track_progress
+from prom.config import COMPUTE_DENDROGRAM_PREFIX
+from prom.decorator import track_progress
 from rmxweb.celery import celery
 
 

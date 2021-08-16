@@ -1,19 +1,25 @@
-import abc
 
 from .config import DURATION, EXCEPTION, LAST_CALL, PROG_PREFIXES, SUCCESS
 
 
-class BasePrometheus(abc.ABC):
+class BasePrometheus:
 
     def __init__(self, *args, dtype: str = None, **kwds):
 
-        self.dtype = dtype
-        if self.dtype not in PROG_PREFIXES:
+        if dtype not in PROG_PREFIXES:
             raise ValueError(f'"{dtype}" is not in {PROG_PREFIXES}')
+        self.dtype = dtype
 
         self.containerid = None
         self.features = None
         self.func_name = None
+
+    def process_parameters(self, **kwds):
+        if "containerid" in kwds:
+            self.containerid = kwds.get('containerid')
+        elif "container" in kwds:
+            self.containerid = kwds["container"].pk
+        self.features = kwds.get('features') or kwds.get('feats')
 
     @property
     def gname_suffix(self):

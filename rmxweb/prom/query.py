@@ -9,10 +9,24 @@ from rmxweb.config import (
 
 
 class QueryPrometheus(BasePrometheus):
-
+    """
+    Querying Prometheus for metrics and stats.
+    """
     time_after_last_call = SECONDS_AFTER_LAST_CALL
 
-    def __init__(self, *args, containerid: (int, str) = None, features: int = None, **kwds):
+    def __init__(
+            self,
+            *args,
+            containerid: (int, str) = None,
+            features: int = None,
+            **kwds
+    ):
+        """
+        :param args:
+        :param containerid:
+        :param features:
+        :param kwds:
+        """
         super(QueryPrometheus, self).__init__(*args, **kwds)
         self.ready = False
         self.containerid = containerid
@@ -62,7 +76,8 @@ class QueryPrometheus(BasePrometheus):
         }
 
     def stat_for_last_call(self):
-        """This method checks if a record exists in prom and if it was created
+        """
+        This method checks if a record exists in prom and if it was created
         less than 30 seconds ago. The time is defined in the
         `time_after_last_call` class variable.
         """
@@ -78,14 +93,30 @@ class QueryPrometheus(BasePrometheus):
         last_call_rec = self.get_record(name=self.lastcall_name)
         if not last_call_rec:
             return self.no_results_response()
-            # return self.last_call_exception()
         last_call_val = float(last_call_rec['value'][1])
         if time.time() - self.time_after_last_call > last_call_val:
             self.ready = True
         return self.response()
 
+    def stat_for_running_process(
+            self,
+            run_dtype: str = None,
+            callback_dtype: str = None
+    ):
+        """
+        Getting metrics for a process that calls a function on callback. This
+        allows to check if a process started running and if it exited (with a
+        call to the callback method).
+
+        :param run_dtype:
+        :param callback_dtype:
+        :return:
+        """
+        pass
+
     def check_last_call_exists(self):
         """This method checks if the records exists in prom."""
+        # todo():  delete this
         exception = self.last_call_exception()
         if exception:
             value = float(exception['value'][1])
@@ -165,3 +196,28 @@ class QueryPrometheus(BasePrometheus):
             'error': True,
             'result': self.result
         }
+
+
+class RunningProcessMetrics(object):
+
+    def __init__(
+            self,
+            run_dtype: str = None,
+            callback_dtype: str = None,
+            containerid: int = None,
+            features: int = None,
+            **kwds
+    ):
+        self.run_metrics = QueryPrometheus(
+            dtype=run_dtype,
+            containerid=containerid,
+            features=features,
+            **kwds
+        )
+        self.callback_metrics = QueryPrometheus(
+            dtype=callback_dtype,
+            containerid=containerid,
+            features=features,
+            **kwds
+        )
+

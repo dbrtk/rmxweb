@@ -61,19 +61,12 @@ RMXWEB_TASKS = {
 
     'create_from_webpage': 'data.tasks.create_from_webpage',
 
+    # todo(): delete this
     # 'create': 'data.tasks.create',
-
 
     'test_task': 'rmxweb.container.tasks.test_task',
 
-    # todo(): delete this
-    # 'generate_matrices_remote':
-    #     'container.tasks.generate_matrices_remote',
-
     'nlp_callback_success': 'container.tasks.nlp_callback_success',
-
-    # todo(): delete this
-    # 'file_extract_callback': 'container.tasks.file_extract_callback',
 
     'integrity_check': 'container.tasks.integrity_check',
 
@@ -82,10 +75,6 @@ RMXWEB_TASKS = {
 
     'delete_data_from_container':
         'container.tasks.delete_data_from_container',
-
-    'expected_files': 'container.tasks.expected_files',
-
-    'create_from_upload': 'container.tasks.create_from_upload',
 
     'process_crawl_resp': 'container.tasks.process_crawl_resp',
 

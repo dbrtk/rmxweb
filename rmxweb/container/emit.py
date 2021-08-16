@@ -3,11 +3,9 @@
 """
 import os
 
-from prom.track_progress import (
-    COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX, track_progress
-)
 
-
+from prom.config import COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX
+from prom.decorator import trackprogress
 from rmxweb.celery import celery
 from rmxweb.config import (
     CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS, SCRASYNC_TASKS, RMXWEB_TASKS
@@ -61,7 +59,7 @@ def get_features(feats: int = 10,
     ).get()
 
 
-@track_progress(dtype=COMPUTE_MATRIX_PREFIX)
+@trackprogress(dtype=COMPUTE_MATRIX_PREFIX)
 def generate_matrices_remote(
         container=None,
         feats: int = 10,
@@ -83,12 +81,6 @@ def generate_matrices_remote(
     """
     containerid = container.pk
     print(f'\n\n\ncalled generate_matrices_remote; containerid: {containerid}; features: {feats}.\n\n')
-    # todo(): delete this
-    # FeaturesStatus.set_status_feats(
-    #     containerid=container.pk,
-    #     busy=True,
-    #     feats=feats,
-    # )
 
     kwds = {
         'containerid': containerid,

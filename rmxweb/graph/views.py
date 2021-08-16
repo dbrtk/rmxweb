@@ -9,11 +9,8 @@ from container.models import Container, FeaturesStatus
 from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
-from prom.track_progress import (
-    COMPUTE_DENDROGRAM_PREFIX,
-    COMPUTE_MATRIX_PREFIX,
-    QueryPrometheus,
-)
+from prom.config import COMPUTE_DENDROGRAM_PREFIX, COMPUTE_MATRIX_PREFIX
+from prom.query import QueryPrometheus
 from serialisers import SerialiserFactory
 
 
