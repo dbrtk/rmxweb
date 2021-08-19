@@ -6,7 +6,7 @@ import requests
 
 from data.models import Data as DataModel
 from .models import Container
-from prom.config import COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX
+from prom.config import COMPUTE_MATRIX_CALLBACK_PREFIX, CREATE_DATA_PREFIX
 from prom.decorator import track_progress, trackprogress
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
@@ -25,15 +25,20 @@ class __Error(Error):
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_MATRIX_PREFIX)
-def nlp_callback_success(**kwds):
+@trackprogress(dtype=COMPUTE_MATRIX_CALLBACK_PREFIX)
+def nlp_callback_success(
+        containerid: (str, int) = None,
+        features: int = None,
+        **kwds
+):
     """
-    Called when a nlp callback is sent to proximitybot. This task is called by
-    the nlp container.
+    Called when a nlp callback is sent to proximity-bot. This task is called by
+    the nlp container. This function is just a placeholder for Prometheus.
     """
     print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
-    container = Container.get_object(pk=kwds.get('containerid'))
-    container.update_on_nlp_callback(feats=kwds.get('feats'))
+    # container = Container.get_object(pk=kwds.get('containerid'))
+    # container.update_on_nlp_callback(feats=kwds.get('feats'))
+    pass
 
 
 @celery.task

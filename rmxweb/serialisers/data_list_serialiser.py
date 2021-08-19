@@ -62,8 +62,9 @@ class DataListCsv(CsvSerialiser):
 
         _items = list(self.data['dataset'])
         del self.data['dataset']
+        _items.reverse()
         while _items:
-            doc = _items.pop(0)
+            doc = _items.pop(-1)
             self.docs.append(self.serialise_doc(doc))
 
     def iter_links(self):

@@ -4,7 +4,7 @@
 import os
 
 
-from prom.config import COMPUTE_MATRIX_PREFIX, CREATE_DATA_PREFIX
+from prom.config import COMPUTE_MATRIX_RUN_PREFIX
 from prom.decorator import trackprogress
 from rmxweb.celery import celery
 from rmxweb.config import (
@@ -59,7 +59,7 @@ def get_features(feats: int = 10,
     ).get()
 
 
-@trackprogress(dtype=COMPUTE_MATRIX_PREFIX)
+@trackprogress(dtype=COMPUTE_MATRIX_RUN_PREFIX)
 def generate_matrices_remote(
         container=None,
         feats: int = 10,

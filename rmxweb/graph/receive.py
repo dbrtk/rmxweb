@@ -1,10 +1,13 @@
 
-from prom.config import COMPUTE_DENDROGRAM_PREFIX
-from prom.decorator import track_progress
+from prom.config import (
+    COMPUTE_DENDROGRAM_CALLBACK_PREFIX, COMPUTE_DENDROGRAM_RUN_PREFIX
+)
+from prom.decorator import trackprogress
 from rmxweb.celery import celery
 
 
 @celery.task
+@trackprogress(dtype=COMPUTE_DENDROGRAM_RUN_PREFIX)
 def compute_dendrogram(containerid: int = None):
     """Called when NLP starts computing the dendrogram. It is called before a
     task is sent to NLP.
@@ -16,7 +19,7 @@ def compute_dendrogram(containerid: int = None):
 
 
 @celery.task
-@track_progress(dtype=COMPUTE_DENDROGRAM_PREFIX)
+@trackprogress(dtype=COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
 def compute_dendrogram_callback(containerid: int = None):
-    """Called when the dendrogram is computed."""
+    """Called when the dendrogram is computed. It needs to be here for prom."""
     return

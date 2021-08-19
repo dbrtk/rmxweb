@@ -74,14 +74,15 @@ class ContainerCsv(CsvSerialiser):
             self.container.append(self.serialise_container(item))
 
     def iter_docs(self):
-
-        for doc in self.data['dataset']:
+        self.data['dataset'].reverse()
+        while self.data['dataset']:
+            doc = self.data['dataset'].pop(-1)
             self.docs.append(self.serialise_doc(doc))
 
     def iter_links(self):
-
+        self.data['links'].reverse()
         while self.data['links']:
-            link = self.data['links'].pop(0)
+            link = self.data['links'].pop(-1)
             self.links.append(self.serialise_link(link))
 
     @staticmethod

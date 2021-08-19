@@ -8,6 +8,12 @@ from rmxweb.config import (
 )
 
 
+class Query(object):
+
+    def __init__(self):
+        pass
+
+
 class QueryPrometheus(BasePrometheus):
     """
     Querying Prometheus for metrics and stats.
@@ -98,33 +104,34 @@ class QueryPrometheus(BasePrometheus):
             self.ready = True
         return self.response()
 
-    def stat_for_running_process(
-            self,
-            run_dtype: str = None,
-            callback_dtype: str = None
-    ):
-        """
-        Getting metrics for a process that calls a function on callback. This
-        allows to check if a process started running and if it exited (with a
-        call to the callback method).
+    # def stat_for_running_process(
+    #         self,
+    #         run_dtype: str = None,
+    #         callback_dtype: str = None
+    # ):
+    #     """
+    #     Getting metrics for a process that calls a function on callback. This
+    #     allows to check if a process started running and if it exited (with a
+    #     call to the callback method).
+    #
+    #     :param run_dtype:
+    #     :param callback_dtype:
+    #     :return:
+    #     """
+    #     # todo(): delete
+    #     pass
 
-        :param run_dtype:
-        :param callback_dtype:
-        :return:
-        """
-        pass
-
-    def check_last_call_exists(self):
-        """This method checks if the records exists in prom."""
-        # todo():  delete this
-        exception = self.last_call_exception()
-        if exception:
-            value = float(exception['value'][1])
-            return self.exception_response(value=value)
-        if not self.result:
-            self.ready = True
-            return self.no_results_response()
-        return self.response()
+    # def check_last_call_exists(self):
+    #     """This method checks if the records exists in prom."""
+    #     # todo():  delete this
+    #     exception = self.last_call_exception()
+    #     if exception:
+    #         value = float(exception['value'][1])
+    #         return self.exception_response(value=value)
+    #     if not self.result:
+    #         self.ready = True
+    #         return self.no_results_response()
+    #     return self.response()
 
     def last_call_exception(self):
         """
@@ -198,7 +205,7 @@ class QueryPrometheus(BasePrometheus):
         }
 
 
-class RunningProcessMetrics(object):
+class RunProcessMetrics(object):
 
     def __init__(
             self,
@@ -208,16 +215,50 @@ class RunningProcessMetrics(object):
             features: int = None,
             **kwds
     ):
-        self.run_metrics = QueryPrometheus(
+        self.rstat = QueryPrometheus(
             dtype=run_dtype,
             containerid=containerid,
             features=features,
             **kwds
         )
-        self.callback_metrics = QueryPrometheus(
+        self.cstat = QueryPrometheus(
             dtype=callback_dtype,
             containerid=containerid,
             features=features,
             **kwds
         )
+        print(
+            f"\n\nMetrics for run: {self.rstat.result}\n"
+            f"Metrics for callback: {self.cstat.result}"
+        )
 
+    def stat_for_last_call(self):
+        c_success = self.cstat.get_record(self.cstat.success_name)
+        if c_success:
+            return {
+                "ready": True,
+                "record": c_success,
+            }
+        else:
+            c_exception = self.cstat.get_record(self.cstat.exception_name)
+            if c_exception:
+                return self.exception_response(c_exception)
+        r_success = self.rstat.get_record(self.rstat.success_name)
+        if r_success:
+            return {
+                "ready": False,
+                "message": "computing data",
+                "record": r_success
+            }
+        if not r_success:
+            r_exception = self.rstat.get_record(self.rstat.exception_name)
+            if r_exception:
+                return self.exception_response(r_exception)
+
+    @staticmethod
+    def exception_response(record):
+        return {
+            "ready": False,
+            "message": "exception",
+            "record": record
+        }
