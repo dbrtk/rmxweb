@@ -69,7 +69,6 @@ class ContainerCsv(CsvSerialiser):
         self.write_to_zip(*params)
 
     def iter_container(self):
-
         for item in self.data['container']:
             self.container.append(self.serialise_container(item))
 

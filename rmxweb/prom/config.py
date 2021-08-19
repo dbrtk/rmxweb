@@ -1,16 +1,10 @@
 CREATE_DATA_PREFIX = "create_data"
 
-# todo(): delete
-COMPUTE_MATRIX_PREFIX = "compute_matrix"
-
 COMPUTE_MATRIX_RUN_PREFIX = "compute_matrix_run"
 COMPUTE_MATRIX_CALLBACK_PREFIX = "compute_matrix_callback"
 
-# todo(): delete
-COMPUTE_DENDROGRAM_PREFIX = "compute_dendrogram"
-
-COMPUTE_DENDROGRAM_RUN_PREFIX = "compute_dendrogram"
-COMPUTE_DENDROGRAM_CALLBACK_PREFIX = "compute_dendrogram"
+COMPUTE_DENDROGRAM_RUN_PREFIX = "compute_dendrogram_run"
+COMPUTE_DENDROGRAM_CALLBACK_PREFIX = "compute_dendrogram_callback"
 
 LAST_CALL = 'last_call'
 SUCCESS = 'success'
@@ -24,9 +18,8 @@ PROG_PREFIXES = [
     CREATE_DATA_PREFIX,  # - create_from_webpage
 
     # this is called when the dendrogram is being computed
-    COMPUTE_DENDROGRAM_PREFIX,  # - dendrogram
-    COMPUTE_DENDROGRAM_RUN_PREFIX,  # - dendrogram
-    COMPUTE_DENDROGRAM_CALLBACK_PREFIX,  # - dendrogram
+    COMPUTE_DENDROGRAM_RUN_PREFIX,  # - dendrogram-run
+    COMPUTE_DENDROGRAM_CALLBACK_PREFIX,  # - dendrogram-callback
 
     # this is the prefix for the tasks computing network graphs
     COMPUTE_MATRIX_RUN_PREFIX,  # - compute_matrix_run

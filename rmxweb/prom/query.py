@@ -215,12 +215,14 @@ class RunProcessMetrics(object):
             features: int = None,
             **kwds
     ):
+        # run stats
         self.rstat = QueryPrometheus(
             dtype=run_dtype,
             containerid=containerid,
             features=features,
             **kwds
         )
+        # callback stats
         self.cstat = QueryPrometheus(
             dtype=callback_dtype,
             containerid=containerid,
@@ -235,6 +237,7 @@ class RunProcessMetrics(object):
     def stat_for_last_call(self):
         c_success = self.cstat.get_record(self.cstat.success_name)
         if c_success:
+            print(f"got c_success: {c_success} - it is computed")
             return {
                 "ready": True,
                 "record": c_success,
@@ -254,6 +257,10 @@ class RunProcessMetrics(object):
             r_exception = self.rstat.get_record(self.rstat.exception_name)
             if r_exception:
                 return self.exception_response(r_exception)
+        return {
+            "ready": True,
+            "message": "No records in prometheus!"
+        }
 
     @staticmethod
     def exception_response(record):

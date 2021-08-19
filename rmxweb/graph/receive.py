@@ -15,6 +15,9 @@ def compute_dendrogram(containerid: int = None):
     This function is a placeholder; it is used to make sure that the progress
     is tracked by prometheus. So, it is decorated with prom's track_progress.
     """
+    print(
+        f"Called `compute_dendrogram` with containerid: {containerid}"
+    )
     return
 
 
@@ -22,4 +25,7 @@ def compute_dendrogram(containerid: int = None):
 @trackprogress(dtype=COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
 def compute_dendrogram_callback(containerid: int = None):
     """Called when the dendrogram is computed. It needs to be here for prom."""
+    print(
+        f"Called `compute_dendrogram_callback` with containerid: {containerid}"
+    )
     return

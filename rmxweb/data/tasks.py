@@ -38,6 +38,8 @@ def delete_many(containerid: str = None, data_ids: list = None):
     """
     DataModel.delete_many(data_ids=data_ids, containerid=containerid)
 
+
+# todo(): delete
 # @celery.task
 # def create(corpusid: str = None,
 #            fileid: str = None,

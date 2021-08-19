@@ -5,7 +5,7 @@ import uuid
 from django.http import Http404, HttpResponse
 from rest_framework.views import APIView, Response
 
-from container.models import Container, FeaturesStatus
+from container.models import Container
 from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
@@ -154,8 +154,10 @@ class Dendrogram(_View):
             containerid=containerid,
         )
         stats = metrics.stat_for_last_call()
-        print(f"The dendrogram metrics: {stats}\n")
-
+        print(
+            f"The dendrogram metrics: {stats}\n"
+            f"Dendrogram is ready: {stats.get('ready')}"
+        )
         if not stats.get('ready'):
             return Response(self.http_resp_for_busy(
                 containerid=containerid,
