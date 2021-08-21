@@ -23,6 +23,7 @@ class Container(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    # todo(): delete these
     crawl_ready = models.BooleanField(default=False)
     container_ready = models.BooleanField(default=False)
     integrity_check_in_progress = models.BooleanField(default=False)
@@ -61,6 +62,7 @@ class Container(models.Model):
     @classmethod
     def container_status(cls, pk: int = None):
         """Retrieves status related data for a container id."""
+        # todo(): review this method
         obj = cls.get_object(pk=pk)
         return {
             'crawl_ready': obj.crawl_ready,
@@ -106,6 +108,7 @@ class Container(models.Model):
 
     def is_ready(self):
         """ Returns a boolean if the container is ready or not."""
+        # todo(): review this method
         if not self.integrity_check_in_progress:
             return self.crawl_ready and self.container_ready
         return False
@@ -123,12 +126,14 @@ class Container(models.Model):
 
     def set_integrity_check_in_progress(self):
         """ Set the value of crawl_ready on the container. """
+        # todo(): review this method
         self.integrity_check_in_progress = True
         self.container_ready = False
         self.save()
 
     def set_integrity_check_ready(self):
         """Called when a crawl and the integrity check succeed."""
+        # todo(): review this method
         self.integrity_check_in_progress = False
         if self.crawl_ready:
             self.container_ready = True
