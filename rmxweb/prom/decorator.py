@@ -3,11 +3,11 @@ import time
 
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 
-from .base import BasePrometheus
+from .base import Namespace
 from rmxweb.config import PROMETHEUS_JOB, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT
 
 
-class TrackProgress(BasePrometheus):
+class TrackProgress(Namespace):
 
     def __init__(self, dtype: str = None):
         super(TrackProgress, self).__init__(dtype=dtype)
@@ -95,7 +95,7 @@ def trackprogress(dtype: str = None):
         @wraps(func)
         def wrapper(*args, **kwds):
 
-            base = BasePrometheus(dtype=dtype)
+            base = Namespace(dtype=dtype)
             base.process_parameters(**kwds)
             registry = CollectorRegistry()
             containerid = kwds.get('containerid')
