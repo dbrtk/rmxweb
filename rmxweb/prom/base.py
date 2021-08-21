@@ -30,8 +30,6 @@ class Namespace(object):
         self.containerid = None
         self.features = None
         self.process_parameters(**kwds)
-        if any(_ is None for _ in (self.features, self.containerid)):
-            raise RuntimeError(f"containerid adn features are required")
         self.func_name = None
 
     def process_parameters(self, **kwds):

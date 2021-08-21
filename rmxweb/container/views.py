@@ -83,7 +83,8 @@ class ContainerRecord(APIView):
         if not isinstance(links, bool):
             raise Http404(params)
         container = self.get_object(pk)
-        if not container.crawl_ready or not container.container_ready:
+
+        if not container.dataset_is_ready():
             container_serializer = ContainerSerializer(self.get_object(pk))
             return Response({
                 'task': {

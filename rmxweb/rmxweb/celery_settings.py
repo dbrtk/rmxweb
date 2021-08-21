@@ -61,30 +61,19 @@ RMXWEB_TASKS = {
 
     'create_from_webpage': 'data.tasks.create_from_webpage',
 
-    # todo(): delete this
-    # 'create': 'data.tasks.create',
-
     'test_task': 'rmxweb.container.tasks.test_task',
-
-    'nlp_callback_success': 'container.tasks.nlp_callback_success',
-
-    'integrity_check': 'container.tasks.integrity_check',
-
-    'integrity_check_callback':
-        'container.tasks.integrity_check_callback',
 
     'delete_data_from_container':
         'container.tasks.delete_data_from_container',
 
     'process_crawl_resp': 'container.tasks.process_crawl_resp',
 
+    # todo(): review and delete...
     'monitor_crawl': 'container.tasks.monitor_crawl',
 
     'crawl_metrics': 'container.tasks.crawl_metrics',
 
-    'compute_dendrogram': 'graph.receive.compute_dendrogram',
-
-    'compute_dendrogram_callback': 'graph.receive.compute_dendrogram_callback',
+    'integrity_check': 'container.tasks.integrity_check',
 
 }
 

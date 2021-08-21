@@ -14,6 +14,8 @@ from django.conf import settings
 from django.db import models
 
 from .emit import get_available_features, get_features
+from prom.crawl_ready import CrawlReady
+from prom.integrity_check import IntegrityCheckReady
 from rmxweb import config
 
 
@@ -112,6 +114,18 @@ class Container(models.Model):
         if not self.integrity_check_in_progress:
             return self.crawl_ready and self.container_ready
         return False
+
+    def dataset_is_ready(self):
+        """
+        Checks if the container is ready.
+
+        :return:
+        """
+        crawl = CrawlReady(containerid=self.pk)()
+        print(f"Dataset is ready. Crawl is ready: {crawl}")
+        integrity_check = IntegrityCheckReady(containerid=self.pk)()
+        print(f"Dataset is ready. Integrity check: {integrity_check}")
+        return bool(crawl.get("ready") and integrity_check.get("ready"))
 
     def set_crawl_ready(self, value: bool = True):
         """Called after starting or finishing the crawl."""

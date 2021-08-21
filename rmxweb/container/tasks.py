@@ -6,12 +6,20 @@ import requests
 
 from data.models import Data as DataModel
 from .models import Container
-from prom.config import COMPUTE_MATRIX_CALLBACK_PREFIX, CREATE_DATA_PREFIX
+from prom.config import (
+    CREATE_DATA_PREFIX,
+    INTEGRITY_CHECK_CALLBACK_PREFIX,
+    INTEGRITY_CHECK_RUN_PREFIX
+)
 from prom.decorator import track_progress, trackprogress
 from rmxweb.config import (
-    CRAWL_MONITOR_COUNTDOWN, CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS,
-    PROMETHEUS_JOB, PROMETHEUS_URL, RMXWEB_TASKS, SCRASYNC_TASKS,
-    SECONDS_AFTER_LAST_CALL
+    CRAWL_MONITOR_COUNTDOWN,
+    NLP_TASKS,
+    PROMETHEUS_JOB,
+    PROMETHEUS_URL,
+    RMXWEB_TASKS,
+    SCRASYNC_TASKS,
+    SECONDS_AFTER_LAST_CALL,
 )
 from rmxweb.celery import celery
 
@@ -25,23 +33,7 @@ class __Error(Error):
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_MATRIX_CALLBACK_PREFIX)
-def nlp_callback_success(
-        containerid: (str, int) = None,
-        features: int = None,
-        **kwds
-):
-    """
-    Called when a nlp callback is sent to proximity-bot. This task is called by
-    the nlp container. This function is just a placeholder for Prometheus.
-    """
-    print(f'\n\n\ncalled nlp_callback_succes; kwds: {kwds}.\n\n')
-    # container = Container.get_object(pk=kwds.get('containerid'))
-    # container.update_on_nlp_callback(feats=kwds.get('feats'))
-    pass
-
-
-@celery.task
+@trackprogress(dtype=INTEGRITY_CHECK_RUN_PREFIX)
 def integrity_check(containerid: str = None):
     """
     Checks the integrity of the container after the crawler finishes.
@@ -49,18 +41,27 @@ def integrity_check(containerid: str = None):
     :return:
     """
     obj = Container.get_object(pk=containerid)
-    obj.set_integrity_check_in_progress()
-    celery.send_task(NLP_TASKS['integrity_check'], kwargs={
-        'containerid': containerid,
-        'path': obj.get_folder_path(),
-    })
+    # todo(): delete this line
+    # obj.set_integrity_check_in_progress()
+    celery.send_task(
+        NLP_TASKS['integrity_check'],
+        kwargs={
+            'containerid': containerid,
+            'path': obj.get_folder_path(),
+        }
+    )
 
 
 @celery.task
-def integrity_check_callback(containerid: int = None):
+@trackprogress(dtype=INTEGRITY_CHECK_CALLBACK_PREFIX)
+def integrity_check_callback(containerid: int = None, path: str = None):
     """Task called after the integrity check succeeds on the level of NLP."""
-    container = Container.get_object(pk=containerid)
-    container.set_integrity_check_ready()
+    # container = Container.get_object(pk=containerid)
+    # container.set_integrity_check_ready()
+    print(
+        f"Called integrity_check_callback with containerid: {containerid}; "
+        f"path: {path}"
+    )
 
 
 @celery.task

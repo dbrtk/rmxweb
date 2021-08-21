@@ -1,24 +1,31 @@
 
 from prom.config import (
-    COMPUTE_DENDROGRAM_CALLBACK_PREFIX, COMPUTE_DENDROGRAM_RUN_PREFIX
+    COMPUTE_DENDROGRAM_CALLBACK_PREFIX,
+    COMPUTE_MATRIX_CALLBACK_PREFIX,
 )
 from prom.decorator import trackprogress
 from rmxweb.celery import celery
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_DENDROGRAM_RUN_PREFIX)
-def compute_dendrogram(containerid: int = None):
-    """Called when NLP starts computing the dendrogram. It is called before a
-    task is sent to NLP.
+@trackprogress(dtype=COMPUTE_MATRIX_CALLBACK_PREFIX)
+def compute_matrix_callback(
+        containerid: int = None,
+        features: int = None,
+        **kwds
+):
+    """
+    This task is called by nlp. It is called after nlp finishes computing a
+    matrix, a graph. This function is just a placeholder for Prometheus. It
+    does logging.
 
-    This function is a placeholder; it is used to make sure that the progress
-    is tracked by prometheus. So, it is decorated with prom's track_progress.
+    :param containerid:
+    :param features:
     """
     print(
-        f"Called `compute_dendrogram` with containerid: {containerid}"
+        f"compute_matrix_callback called with containerid: {containerid}; "
+        f"features: {features}; kwds: {kwds}"
     )
-    return
 
 
 @celery.task
@@ -28,4 +35,4 @@ def compute_dendrogram_callback(containerid: int = None):
     print(
         f"Called `compute_dendrogram_callback` with containerid: {containerid}"
     )
-    return
+

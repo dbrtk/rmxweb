@@ -5,10 +5,9 @@ from .query import RunProcessMetrics
 
 class IntegrityCheckReady(object):
 
-    def __init__(self, containerid: int = None, features: int = None):
+    def __init__(self, containerid: int = None):
         self.stats = RunProcessMetrics(
             containerid=containerid,
-            features=features,
             callback_dtype=INTEGRITY_CHECK_CALLBACK_PREFIX,
             run_dtype=INTEGRITY_CHECK_RUN_PREFIX
         )

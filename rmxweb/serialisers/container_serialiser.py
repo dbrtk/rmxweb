@@ -90,9 +90,6 @@ class ContainerCsv(CsvSerialiser):
         return {
             'pk': c.pk,
             'name': c.name,
-            'crawl_ready': c.crawl_ready,
-            'integrity_check_in_progress': c.integrity_check_in_progress,
-            'container_ready': c.container_ready,
             'created': c.created.isoformat(),
             'updated': c.updated.isoformat(),
             'uid': c.uid

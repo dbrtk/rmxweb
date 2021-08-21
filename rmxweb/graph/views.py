@@ -9,13 +9,9 @@ from container.models import Container
 from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
-from prom.config import (
-    COMPUTE_DENDROGRAM_CALLBACK_PREFIX,
-    COMPUTE_DENDROGRAM_RUN_PREFIX,
-    COMPUTE_MATRIX_CALLBACK_PREFIX,
-    COMPUTE_MATRIX_RUN_PREFIX
-)
-from prom.query import QueryPrometheus, RunProcessMetrics
+
+from prom.dendrogram import DendrogramReady
+from prom.graph import GraphReady
 from serialisers import SerialiserFactory
 
 
@@ -69,14 +65,10 @@ class Graph(_View):
         :param uri:
         :return:
         """
-        metrics = RunProcessMetrics(
-            run_dtype=COMPUTE_MATRIX_RUN_PREFIX,
-            callback_dtype=COMPUTE_MATRIX_CALLBACK_PREFIX,
+        stats = GraphReady(
             containerid=containerid,
             features=features
-        )
-        stats = metrics.stat_for_last_call()
-
+        )()
         print(f"\n\n\nGenerating the graph")
         print(f'the stats for graph / matrix computation: {stats}; '
               f'ready: {stats.get("ready")}; not ready: '
@@ -147,13 +139,7 @@ class Dendrogram(_View):
         if not isinstance(flat, bool):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
-
-        metrics = RunProcessMetrics(
-            run_dtype=COMPUTE_DENDROGRAM_RUN_PREFIX,
-            callback_dtype=COMPUTE_DENDROGRAM_CALLBACK_PREFIX,
-            containerid=containerid,
-        )
-        stats = metrics.stat_for_last_call()
+        stats = DendrogramReady(containerid=containerid)()
         print(
             f"The dendrogram metrics: {stats}\n"
             f"Dendrogram is ready: {stats.get('ready')}"

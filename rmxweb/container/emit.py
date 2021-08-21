@@ -3,12 +3,14 @@
 """
 import os
 
-
-from prom.config import COMPUTE_MATRIX_RUN_PREFIX
+from prom.config import COMPUTE_MATRIX_CALLBACK_PREFIX, COMPUTE_MATRIX_RUN_PREFIX
 from prom.decorator import trackprogress
 from rmxweb.celery import celery
 from rmxweb.config import (
-    CRAWL_START_MONITOR_COUNTDOWN, NLP_TASKS, SCRASYNC_TASKS, RMXWEB_TASKS
+    CRAWL_START_MONITOR_COUNTDOWN,
+    NLP_TASKS,
+    SCRASYNC_TASKS,
+    RMXWEB_TASKS
 )
 
 
@@ -70,18 +72,18 @@ def generate_matrices_remote(
     """
     Generating matrices on the remote server.
 
-    :param self:
     :param container: instance of Container
     :param feats:
     :param words:
     :param vectors_path:
     :param docs_per_feat:
     :param feats_per_doc:
-    :return:
     """
     containerid = container.pk
-    print(f'\n\n\ncalled generate_matrices_remote; containerid: {containerid}; features: {feats}.\n\n')
-
+    print(
+        f'\n\nCalled generate_matrices_remote; containerid: {containerid}; '
+        f'features: {feats}.\n\n'
+    )
     kwds = {
         'containerid': containerid,
         'feats': int(feats),
@@ -90,6 +92,10 @@ def generate_matrices_remote(
         'feats_per_doc': int(feats_per_doc),
         'path': container.get_folder_path(),
     }
+    print(
+        f"The vector path ({vectors_path}) exists: "
+        f"{os.path.isfile(vectors_path)}"
+    )
     if os.path.isfile(vectors_path):
         celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
     else:
