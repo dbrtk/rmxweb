@@ -69,11 +69,6 @@ class Graph(_View):
             containerid=containerid,
             features=features
         )()
-        print(f"\n\n\nGenerating the graph")
-        print(f'the stats for graph / matrix computation: {stats}; '
-              f'ready: {stats.get("ready")}; not ready: '
-              f'{not stats.get("ready")}\n')
-
         if not stats.get('ready'):
             return Response(
                 super().http_resp_for_busy(
@@ -140,10 +135,6 @@ class Dendrogram(_View):
             raise Http404(params)
         serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
         stats = DendrogramReady(containerid=containerid)()
-        print(
-            f"The dendrogram metrics: {stats}\n"
-            f"Dendrogram is ready: {stats.get('ready')}"
-        )
         if not stats.get('ready'):
             return Response(self.http_resp_for_busy(
                 containerid=containerid,

@@ -1,4 +1,8 @@
+import datetime
+import pytz
 import time
+
+from django.conf import settings
 
 from .base import Namespace, Q
 from rmxweb.config import (
@@ -159,9 +163,6 @@ class RunProcessMetrics(object):
             **kwds
         )
         self.q = Q(metrics_names=self.metrics_names)
-        print(
-            f"\n\nMetrics for run and callback: {self.q.result}\n"
-        )
 
     @property
     def metrics_names(self):
@@ -178,7 +179,6 @@ class RunProcessMetrics(object):
     def stat_for_last_call(self):
         c_success = self.q.get_record(self.callback_n.success_name)
         if c_success:
-            print(f"got c_success: {c_success} - it is computed")
             return {
                 "ready": True,
                 "record": c_success,
@@ -188,7 +188,7 @@ class RunProcessMetrics(object):
             if c_exception:
                 return self.exception_response(c_exception)
         r_success = self.q.get_record(self.run_n.success_name)
-        if r_success:
+        if r_success and self.timestamp_check(r_success):
             return {
                 "ready": False,
                 "message": "computing data",
@@ -210,3 +210,23 @@ class RunProcessMetrics(object):
             "message": "exception",
             "record": record
         }
+
+    @staticmethod
+    def timestamp_check(record):
+        """
+        Checks if the difference between the timestamp in the record and now is
+        greater than 15 minutes.
+        The second value in a prom's sample is a timestamp.
+
+        :param record:
+        :return:
+        """
+        # time_zone = pytz.timezone(settings.TIME_ZONE)
+
+        now = time.time()
+        timestamp = record['value'][1]
+        if not isinstance(timestamp, float):
+            timestamp = float(timestamp)
+        if now - timestamp < 15 * 60:
+            return True
+        return False

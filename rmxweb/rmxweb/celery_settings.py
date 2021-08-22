@@ -81,6 +81,7 @@ SCRASYNC_TASKS = {
 
     'launch_crawl': 'scrasync.scraper.launch_crawl',
 
+    # todo(): delete this
     'delete_crawl_status': 'scrasync.tasks.delete_many',
 
 }

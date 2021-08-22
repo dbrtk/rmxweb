@@ -18,25 +18,12 @@ class TrackProgress(Namespace):
         self.func_name = func.__name__
         update_wrapper(self, func)
 
-        print(f"\n\nDECORATOR CALLED TrackProgress.__call__\n\n", flush=True)
-
         def wrapper(*args, **kwds):
-            print(
-                f"\n\nTrack Progress - inside the wrapper. Executing the function.\n"
-                f"The functions name: {self.func_name}.\n"
-                f"args: {args} kwargs: {kwds}",
-                flush=True
-            )
             self.process_parameters(**kwds)
             return self.run(func, *args, **kwds)
         return wrapper
 
     def run(self, func, *args, **kwds):
-        print(
-            f"TRACK_PROGRESS DECORATOR - run called with args: {args}; "
-            f"kwargs: {kwds}\n\n",
-            flush=True
-        )
         self.registry = CollectorRegistry()
         try:
             gtime = Gauge(
@@ -98,19 +85,6 @@ def trackprogress(dtype: str = None):
             base = Namespace(dtype=dtype)
             base.process_parameters(**kwds)
             registry = CollectorRegistry()
-            containerid = kwds.get('containerid')
-
-            print(
-                f'\n\n\nTRACK-PROGRESS - DECORATOR AS FUNCTION\n'
-                f'inside the wrapper. containerid: {containerid}; dtype: '
-                f'{dtype}; args: {args}, kwds: {kwds}',
-                flush=True
-            )
-            print(
-                f"NAMES: {base.progress_name}, {base.lastcall_name}, "
-                f"{base.exception_name}, {base.success_name}",
-                flush=True
-            )
             try:
                 gtime = Gauge(
                     base.progress_name,

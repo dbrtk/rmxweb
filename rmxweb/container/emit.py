@@ -18,7 +18,11 @@ def get_available_features(containerid: int = None, folder_path: str = None):
     """Retrieves available features from nlp"""
     return celery.send_task(
         NLP_TASKS['available_features'],
-        kwargs={'corpusid': containerid, 'path': folder_path}).get()
+        kwargs={
+            'containerid': containerid,
+            'path': folder_path
+        }
+    ).get()
 
 
 def crawl_async(url_list: list = None, containerid=None, depth=1):
@@ -30,13 +34,15 @@ def crawl_async(url_list: list = None, containerid=None, depth=1):
         'containerid': containerid,
         'depth': depth
     }).get()
+
+    # todo(): delete this - no monitoring is needed.
     # the countdown argument is here to make sure that this task does not
     # start immediately as prometheus may be empty.
-    celery.send_task(
-        RMXWEB_TASKS['monitor_crawl'],
-        kwargs={'containerid': containerid, 'crawlid': crawlid},
-        countdown=CRAWL_START_MONITOR_COUNTDOWN
-    )
+    # celery.send_task(
+    #     RMXWEB_TASKS['monitor_crawl'],
+    #     kwargs={'containerid': containerid, 'crawlid': crawlid},
+    #     countdown=CRAWL_START_MONITOR_COUNTDOWN
+    # )
     return crawlid
 
 
@@ -80,10 +86,6 @@ def generate_matrices_remote(
     :param feats_per_doc:
     """
     containerid = container.pk
-    print(
-        f'\n\nCalled generate_matrices_remote; containerid: {containerid}; '
-        f'features: {feats}.\n\n'
-    )
     kwds = {
         'containerid': containerid,
         'feats': int(feats),
@@ -92,10 +94,6 @@ def generate_matrices_remote(
         'feats_per_doc': int(feats_per_doc),
         'path': container.get_folder_path(),
     }
-    print(
-        f"The vector path ({vectors_path}) exists: "
-        f"{os.path.isfile(vectors_path)}"
-    )
     if os.path.isfile(vectors_path):
         celery.send_task(NLP_TASKS['factorize_matrices'], kwargs=kwds)
     else:

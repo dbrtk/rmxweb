@@ -58,10 +58,11 @@ def integrity_check_callback(containerid: int = None, path: str = None):
     """Task called after the integrity check succeeds on the level of NLP."""
     # container = Container.get_object(pk=containerid)
     # container.set_integrity_check_ready()
-    print(
-        f"Called integrity_check_callback with containerid: {containerid}; "
-        f"path: {path}"
-    )
+    # print(
+    #     f"Called integrity_check_callback with containerid: {containerid}; "
+    #     f"path: {path}"
+    # )
+    pass
 
 
 @celery.task
@@ -92,6 +93,9 @@ def process_crawl_resp(resp, containerid, crawlid):
     :param containerid:
     :return:
     """
+    # todo(): delete this.
+    # todo(): delete this.
+    # todo(): delete this.
     crawl_status = Container.container_status(containerid)
     if resp.get('ready'):
         celery.send_task(
@@ -99,6 +103,7 @@ def process_crawl_resp(resp, containerid, crawlid):
             kwargs={'containerid': containerid, 'crawlid': crawlid}
         )
         container = Container.get_object(pk=containerid)
+
         container.set_crawl_ready(value=True)
         if not crawl_status['integrity_check_in_progress']:
             celery.send_task(
@@ -120,6 +125,8 @@ def monitor_crawl(containerid: int = None, crawlid: str = None):
        The first parameter is empty becasue it is called as a linked task
        receiving a list of endpoints from the scrapper.
     """
+    # todo(): delete this
+    # todo(): delete this
     celery.send_task(
         RMXWEB_TASKS['crawl_metrics'],
         kwargs={'containerid': containerid},
@@ -151,6 +158,9 @@ def crawl_metrics(containerid: int = None):
         }
     }
     """
+    # todo(): delete this
+    # todo(): delete this
+    # todo(): delete this
     ready = False
 
     exception = f'{CREATE_DATA_PREFIX}__exception_{containerid}'

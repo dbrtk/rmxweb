@@ -10,10 +10,3 @@ class ContainerSerializer(serializers.ModelSerializer):
         model = models.Container
         fields = ['pk', 'name', 'crawl_ready', 'integrity_check_in_progress',
                   'container_ready', 'created', 'updated', 'uid']
-
-
-class CrawlStatusSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = models.CrawlStatus
-        fields = ['type', 'busy', 'feats', 'task_name', 'task_id', 'container']

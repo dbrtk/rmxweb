@@ -2,8 +2,8 @@
 from django.http import Http404, HttpResponse
 from rest_framework.views import APIView, Response
 
-from container.models import Container, FeaturesStatus
 from .emit import get_features
+from prom.graph import GraphReady
 from serialisers import SerialiserFactory
 
 
@@ -22,12 +22,12 @@ class Feature(APIView):
         except (ValueError, KeyError, TypeError) as _:
             raise Http404(params)
 
-        stat = self.check_features_status(containerid, feats)
-        if not stat['success']:
+        stats = GraphReady(containerid=containerid, features=feats)()
+        if not stats.get("ready"):
             return Response(self.http_resp_for_busy(
                 id=containerid,
                 uri=request.get_full_path(),
-                payload=stat
+                payload=stats
             ), status=202)
 
         resp = self.get_features(containerid, feats, words)
@@ -50,6 +50,7 @@ class Feature(APIView):
 
     def http_resp_for_busy(self, id: (int, str), payload: dict, uri: str):
         """
+        :param id:
         :param payload:
         :param uri:
         :return:
@@ -66,24 +67,6 @@ class Feature(APIView):
         }
 
     @staticmethod
-    def check_features_status(containerid: int, features: int):
-        """
-        :param containerid:
-        :param features:
-        :return:
-        """
-        if FeaturesStatus.computing_feats_busy(
-                containerid=containerid, feats=features):
-            return {
-                'containerid': containerid,
-                'features': features,
-                'retry': True,
-                'busy': True,
-                'success': False,
-            }
-        return {'success': True}
-
-    @staticmethod
     def get_features(containerid: int, feats: int, words: int):
         """
         Getting features and lexemes.
@@ -93,7 +76,11 @@ class Feature(APIView):
         :param path:
         :return:
         """
-        out = get_features(containerid=containerid, features=feats, words=words)
+        out = get_features(
+            containerid=containerid,
+            features=feats,
+            words=words
+        )
         if not out['success']:
             return out
 

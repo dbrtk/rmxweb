@@ -1,20 +1,18 @@
 """ Models for the container that holds data related to specific crawls.
 """
-import datetime
 import json
 import os
-import pytz
 import re
 import stat
 import shutil
 from typing import List
 import uuid
 
-from django.conf import settings
 from django.db import models
 
 from .emit import get_available_features, get_features
 from prom.crawl_ready import CrawlReady
+from prom.graph import GraphReady
 from prom.integrity_check import IntegrityCheckReady
 from rmxweb import config
 
@@ -117,15 +115,21 @@ class Container(models.Model):
 
     def dataset_is_ready(self):
         """
-        Checks if the container is ready.
+        Checks if the container is ready. It uses time-series provided by prom.
 
         :return:
         """
         crawl = CrawlReady(containerid=self.pk)()
-        print(f"Dataset is ready. Crawl is ready: {crawl}")
         integrity_check = IntegrityCheckReady(containerid=self.pk)()
-        print(f"Dataset is ready. Integrity check: {integrity_check}")
         return bool(crawl.get("ready") and integrity_check.get("ready"))
+
+    def func_integrity_check_in_progress(self):
+
+        integrity_check = IntegrityCheckReady(containerid=self.pk)()
+        if integrity_check.get("ready"):
+            return False
+        return True
+
 
     def set_crawl_ready(self, value: bool = True):
         """Called after starting or finishing the crawl."""
@@ -220,52 +224,34 @@ class Container(models.Model):
 
     def features_availability(self, feature_number: int = 10):
         """ Checking feature's availability. """
-        status = FeaturesStatus.get_status_feats(
-            feats=feature_number, containerid=self.pk)
+
+        gstat = GraphReady(containerid=self.pk, features=feature_number)()
+        istat = IntegrityCheckReady(containerid=self.pk)()
+        assert isinstance(gstat.get("ready"), bool)
+        assert isinstance(istat.get("ready"), bool)
+        features_are_ready = bool(gstat.get("ready") and istat.get("ready"))
 
         out = {
             'requested_features': feature_number,
             'containerid': self.pk,
-            'busy': False
+            'busy': not features_are_ready  # False
         }
-        time_zone = pytz.timezone(settings.TIME_ZONE)
-        if status:
-            if status.busy is True and status.feats == feature_number:
-                delta = datetime.datetime.now(time_zone) - status.updated
-                delta = divmod(delta.total_seconds(), 60)
-                # after 15 minutes, the status lock should be deleted (in case
-                # of bugs, crashes).
-                if delta[0] >= 15:
-                    FeaturesStatus.del_status_feats(
-                        feats=feature_number, containerid=self.pk)
-                else:
-                    out['busy'] = True
-        if out['busy'] is False:
+        if features_are_ready:
             try:
                 _count = get_available_features(
                     containerid=self.pk,
-                    folder_path=self.get_folder_path())
-                next(_ for _ in _count if int(
-                    _.get('featcount')) == feature_number)
+                    folder_path=self.get_folder_path()
+                )
+                next(_ for _ in _count if
+                     int(_.get('featcount')) == feature_number)
                 _count = list(int(_.get('featcount')) for _ in _count)
             except StopIteration:
                 out['available'] = False
             else:
                 out['features_count'] = _count
                 out['feature_number'] = feature_number
-                out['available'] = feature_number in _count
+                out['available'] = True  # feature_number in _count
         return out
-
-    def update_on_nlp_callback(self, feats: int = None):
-        """ Update the container after nlp finishes computing matrices with
-        features.
-        :param feats:
-        :return:
-        """
-        # todo(): delete in the close future - FeaturesStatus -> Prometheus
-        self.crawl_ready = True
-        self.save()
-        FeaturesStatus.del_status_feats(feats=feats, containerid=self.pk)
 
     def get_features_count(self, verbose: bool = False):
         """ Returning the features count. """
@@ -348,14 +334,6 @@ class Container(models.Model):
             dicts = [_[0] for _ in re.findall(pattern, content)]
             return map(json.loads, dicts), lemma_list
 
-    def feature_words(self, feats: int = None):
-        """
-
-        :param feats:
-        :return:
-        """
-        pass
-
     def delete_container(self):
         """
         Deleting the container and its directory on the server.
@@ -363,154 +341,3 @@ class Container(models.Model):
         """
         shutil.rmtree(self.get_folder_path())
         self.delete()
-
-
-# todo(): get rid of the status model.
-class CrawlStatus(models.Model):
-
-    type = models.CharField(max_length=100)
-    busy = models.BooleanField(default=False)
-    feats = models.IntegerField()
-    task_name = models.CharField(max_length=100)
-    task_id = models.CharField(max_length=100)
-    container = models.ForeignKey(Container, on_delete=models.CASCADE)
-
-
-# todo(): get rid of the status model. replace it with prometheus
-class FeaturesStatus(models.Model):
-    """
-    Status object used when computing features.
-    """
-    busy = models.BooleanField(default=False)
-    feats = models.IntegerField(null=True)
-    created = models.DateTimeField(auto_now_add=True)
-    updated = models.DateTimeField(auto_now=True)
-    containerid = models.IntegerField(null=True)
-    computing_dendrogram = models.BooleanField(default=False)
-
-    @classmethod
-    def create(cls, containerid: int = None, feats: int = None,
-               busy: bool = True):
-        """
-        :param containerid:
-        :param feats:
-        :param busy:
-        :return:
-        """
-        obj = cls.get_status_feats(containerid=containerid, feats=feats)
-        if obj:
-            return obj
-        obj = cls(containerid=containerid, feats=feats, busy=busy)
-        obj.save()
-        return obj
-
-    @classmethod
-    def get_status_feats(cls, containerid: int = None, feats: int = None):
-        """
-        :param containerid:
-        :param feats:
-        :return:
-        """
-        try:
-            obj = cls.objects.get(containerid=containerid, feats=feats)
-        except cls.DoesNotExist as _:
-            return None
-        return obj
-
-    @classmethod
-    def set_status_feats(cls, containerid: int = None, feats: int = None,
-                         busy: bool = True):
-        """
-        :param containerid:
-        :param feats:
-        :param busy:
-        :return:
-        """
-        obj = cls.get_status_feats(feats=feats, containerid=containerid)
-        if obj:
-            obj.busy = busy
-            obj.save()
-        else:
-            obj = cls.create(busy=busy, containerid=containerid, feats=feats)
-        return obj
-
-    @classmethod
-    def del_status_feats(cls, containerid: int = None, feats: int = None):
-        """
-        :param containerid:
-        :param feats:
-        :return:
-        """
-        cls.objects.filter(containerid=containerid, feats=feats).delete()
-
-    @classmethod
-    def get_status_dendrogram(cls, containerid):
-        """Returns the record for the dendrogram status."""
-        try:
-            obj = cls.objects.filter(
-                containerid=containerid, computing_dendrogram=True)
-        except cls.DoesNotExist as _:
-            return
-        print('getting the status for dendrogram')
-        return obj
-
-    @classmethod
-    def set_status_dendrogram(cls, containerid):
-        """Creating up a record for the process that computes the dendrogram.
-        """
-        obj = cls.get_status_dendrogram(containerid)
-        if obj:
-            return obj
-        else:
-            obj = cls(
-                containerid=containerid,
-                computing_dendrogram=True,
-                busy=True
-            )
-            obj.save()
-        return obj
-
-    @classmethod
-    def del_status_dendrogram(cls, containerid):
-
-        cls.objects.filter(
-            containerid=containerid, computing_dendrogram=True).delete()
-
-    @classmethod
-    def computing_dendrogram_busy(cls, containerid: int = None):
-        """Returns true if the dendrogram is currently computed."""
-        status = cls.get_status_dendrogram(containerid)
-        if status:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def computing_feats_busy(cls, containerid: int, feats: int) -> bool:
-        """
-        :param containerid:
-        :param feats:
-        :return:
-        """
-        status = cls.get_status_feats(containerid=containerid, feats=feats)
-        if status:
-            return True
-        else:
-            return False
-
-    @classmethod
-    def container_busy(cls, containerid: int = None):
-        """
-        :param containerid:
-        :return:
-        """
-        return cls.objects.filter(containerid=containerid)
-
-    @staticmethod
-    def check_timestamp(query_set):
-
-        time_zone = pytz.timezone(settings.TIME_ZONE)
-        for record in query_set:
-            if (datetime.datetime.now(time_zone) - record.created) > \
-                    datetime.timedelta(minutes=15):
-                print('THE RECORD SHOULD BE DELETED')
