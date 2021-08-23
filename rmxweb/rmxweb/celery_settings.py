@@ -66,14 +66,15 @@ RMXWEB_TASKS = {
     'delete_data_from_container':
         'container.tasks.delete_data_from_container',
 
-    'process_crawl_resp': 'container.tasks.process_crawl_resp',
+    # 'process_crawl_resp': 'container.tasks.process_crawl_resp',
 
-    # todo(): review and delete...
     'monitor_crawl': 'container.tasks.monitor_crawl',
 
-    'crawl_metrics': 'container.tasks.crawl_metrics',
+    # 'crawl_metrics': 'container.tasks.crawl_metrics',
 
     'integrity_check': 'container.tasks.integrity_check',
+
+    'generate_matrix_remote': 'container.tasks.generate_matrix_remote',
 
 }
 
