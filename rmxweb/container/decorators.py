@@ -1,7 +1,6 @@
 
 from functools import wraps
 
-from .emit import generate_matrices_remote
 from .models import Container
 from rmxweb.celery import celery
 from rmxweb import config
@@ -50,26 +49,16 @@ def feats_available(func):
             }
             out.update(kwds)
             return func(**out)
-        generate_matrices_remote(
-            container=container,
-            feats=features,
-            vectors_path=container.get_vectors_path(),
-            words=words,
-            docs_per_feat=docsperfeat,
-            feats_per_doc=featsperdoc
+        celery.send_task(
+            config.RMXWEB_TASKS['generate_matrix_remote'],
+            kwargs={
+                'containerid': container.pk,
+                'features': features,
+                'words': words,
+                'docs_per_feat': docsperfeat,
+                'feats_per_doc': featsperdoc
+            }
         )
-        # todo(): delete this!
-        # celery.send_task(
-        #     config.RMXWEB_TASKS['generate_matrices_remote'],
-        #     kwargs={
-        #         'containerid': container.pk,
-        #         'feats': features,
-        #         'vectors_path': container.get_vectors_path(),
-        #         'words': words,
-        #         'docs_per_feat': docsperfeat,
-        #         'feats_per_doc': featsperdoc
-        #     }
-        # )
         out.update(availability)
         return out
     return wrapped_view
