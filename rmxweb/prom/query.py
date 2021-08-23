@@ -1,8 +1,4 @@
-import datetime
-import pytz
 import time
-
-from django.conf import settings
 
 from .base import Namespace, Q
 from rmxweb.config import (
@@ -177,6 +173,10 @@ class RunProcessMetrics(object):
         )
 
     def stat_for_last_call(self):
+        """
+
+        :return:
+        """
         c_success = self.q.get_record(self.callback_n.success_name)
         if c_success:
             return {
@@ -187,14 +187,16 @@ class RunProcessMetrics(object):
             c_exception = self.q.get_record(self.callback_n.exception_name)
             if c_exception:
                 return self.exception_response(c_exception)
+
         r_success = self.q.get_record(self.run_n.success_name)
-        if r_success and self.timestamp_check(r_success):
-            return {
-                "ready": False,
-                "message": "computing data",
-                "record": r_success
-            }
-        if not r_success:
+        if r_success:
+            if not self.record_outdated(r_success):
+                return {
+                    "ready": False,
+                    "message": "computing data",
+                    "record": r_success
+                }
+        else:
             r_exception = self.q.get_record(self.run_n.exception_name)
             if r_exception:
                 return self.exception_response(r_exception)
@@ -212,7 +214,7 @@ class RunProcessMetrics(object):
         }
 
     @staticmethod
-    def timestamp_check(record):
+    def record_outdated(record):
         """
         Checks if the difference between the timestamp in the record and now is
         greater than 15 minutes.
@@ -221,12 +223,10 @@ class RunProcessMetrics(object):
         :param record:
         :return:
         """
-        # time_zone = pytz.timezone(settings.TIME_ZONE)
-
         now = time.time()
         timestamp = record['value'][1]
         if not isinstance(timestamp, float):
             timestamp = float(timestamp)
-        if now - timestamp < 15 * 60:
+        if now - timestamp >= 15 * 60:
             return True
         return False
