@@ -23,10 +23,11 @@ class Container(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
-    # todo(): delete these
-    crawl_ready = models.BooleanField(default=False)
     container_ready = models.BooleanField(default=False)
-    integrity_check_in_progress = models.BooleanField(default=False)
+
+    # todo(): delete these
+    # crawl_ready = models.BooleanField(default=False)
+    # integrity_check_in_progress = models.BooleanField(default=False)
 
     uid = models.UUIDField(default=uuid.uuid4, unique=True)
 
@@ -59,26 +60,27 @@ class Container(models.Model):
         obj.create_folder()
         return obj
 
-    @classmethod
-    def container_status(cls, pk: int = None):
-        """Retrieves status related data for a container id."""
-        # todo(): review this method
-        obj = cls.get_object(pk=pk)
-        return {
-            'crawl_ready': obj.crawl_ready,
-            'integrity_check_in_progress': obj.integrity_check_in_progress,
-            'container_ready': obj.container_ready,
-        }
+    # @classmethod
+    # def container_status(cls, pk: int = None):
+    #     """Retrieves status related data for a container id."""
+    #     # todo(): review this method and possibly delete
+    #     obj = cls.get_object(pk=pk)
+    #     return {
+    #         'crawl_ready': obj.crawl_ready,
+    #         'integrity_check_in_progress': obj.integrity_check_in_progress,
+    #         'container_ready': obj.container_ready,
+    #     }
 
-    @classmethod
-    def paginate(cls, start: int = 0, end: int = 100):
-        """ Paginate containers.
-        :param start:
-        :param end:
-        :return:
-        """
-        return cls.objects.filter(
-            crawl_ready=True, container_ready=True)[start:end + 1]
+    # @classmethod
+    # def paginate(cls, start: int = 0, end: int = 100):
+    #     """ Paginate containers.
+    #     :param start:
+    #     :param end:
+    #     :return:
+    #     """
+    #     # todo(): remove this - it's never used
+    #     return cls.objects.filter(
+    #         crawl_ready=True, container_ready=True)[start:end + 1]
 
     @property
     def matrix_path(self):
@@ -106,56 +108,93 @@ class Container(models.Model):
         """
         return [_.pk for _ in self.data_set.all()]
 
-    def is_ready(self):
-        """ Returns a boolean if the container is ready or not."""
-        # todo(): review this method
-        if not self.integrity_check_in_progress:
-            return self.crawl_ready and self.container_ready
-        return False
+    # def is_ready(self):
+    #     """ Returns a boolean if the container is ready or not."""
+    #     # todo(): review this method and delete
+    #     if not self.integrity_check_in_progress:
+    #         return self.crawl_ready and self.container_ready
+    #     return False
 
     def dataset_is_ready(self):
         """
         Checks if the container is ready. It uses time-series provided by prom.
+        It verifies if there is a running crawling processes, or an integrity
+        check in progress. If the dataset is ready to use, the filed
+        container_ready should be set to True.
 
         :return:
         """
+        return bool(
+            self.container_ready and
+            self.crawl_is_ready() and
+            self.integrity_check_is_ready()
+        )
+
+    def crawl_is_ready(self):
+        """
+        Returns True if scrasync finished crawling.
+
+        :return: True is the dataset is ready, otherwise False
+        :rtype: boolean
+        """
         crawl = CrawlReady(containerid=self.pk)()
+        return crawl.get('ready', False)
+
+    def integrity_check_is_ready(self):
+        """
+        Querying prometheus for integrity-check records.
+
+        :return: True is there is ano integrity check in progress, else False
+        :rtype: boolean
+        """
         integrity_check = IntegrityCheckReady(containerid=self.pk)()
-        return bool(crawl.get("ready") and integrity_check.get("ready"))
+        return integrity_check.get('ready', False)
 
-    def func_integrity_check_in_progress(self):
+    def toggle_container_ready(
+            self,
+            crawl_ready: bool = None,
+            integrity_check_ready: bool = None
+    ):
+        """
+        This updates the container_ready variable.
 
-        integrity_check = IntegrityCheckReady(containerid=self.pk)()
-        if integrity_check.get("ready"):
-            return False
-        return True
-
-
-    def set_crawl_ready(self, value: bool = True):
-        """Called after starting or finishing the crawl."""
-        # todo(): review and delete!
-        self.crawl_ready = value
-        if value:
-            if not self.integrity_check_in_progress:
+        :return: True is the dataset is ready, else False
+        :rytpe: boolean
+        """
+        if not isinstance(crawl_ready, bool):
+            crawl_ready = self.crawl_is_ready()
+        if not isinstance(integrity_check_ready, bool):
+            integrity_check_ready = self.integrity_check_is_ready()
+        if crawl_ready:
+            if integrity_check_ready:
                 self.container_ready = True
         else:
             self.container_ready = False
         self.save()
+        return self.container_ready
 
-    def set_integrity_check_in_progress(self):
-        """ Set the value of crawl_ready on the container. """
-        # todo(): review this method
-        self.integrity_check_in_progress = True
-        self.container_ready = False
-        self.save()
+    # def set_container_ready(self, value: bool = True):
+    #     """Called after starting or finishing the crawl."""
+    #     # todo(): delete this
+    #     self.crawl_ready = value
+    #     if value:
+    #         if not self.integrity_check_in_progress:
+    #             self.container_ready = True
+    #     else:
+    #         self.container_ready = False
+    #     self.save()
 
-    def set_integrity_check_ready(self):
-        """Called when a crawl and the integrity check succeed."""
-        # todo(): review this method
-        self.integrity_check_in_progress = False
-        if self.crawl_ready:
-            self.container_ready = True
-        self.save()
+    # def set_integrity_check_in_progress(self):
+    #     """ Set the value of crawl_ready on the container. """
+    #     # todo(): review this method
+    #     self.integrity_check_in_progress = True
+    #     self.container_ready = False
+    #     self.save()
+    #
+    # def integrity_check_callback(self):
+    #     """Called when the integrity check on NLP succeeds."""
+    #     # todo(): delete
+    #     self.toggle_container_ready()
 
     # path and data related methods
     def get_folder_path(self):
