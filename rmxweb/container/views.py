@@ -48,7 +48,7 @@ class ContainerList(APIView):
         container = Container.create(the_name=the_name)
         depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
         crawlid = crawl_async(
-            url_list=url_list, containerid=container.pk, depth=depth)
+            url_list=url_list, container=container, depth=depth)
         return Response({
             'task': {
                 'href': request.get_full_path(),
@@ -64,7 +64,8 @@ class ContainerList(APIView):
 
 class ContainerRecord(APIView):
 
-    def get_object(self, pk):
+    @staticmethod
+    def get_object(pk):
         try:
             return Container.get_object(pk=pk)
         except Container.DoesNotExist:
@@ -128,9 +129,7 @@ class ContainerRecord(APIView):
         if not isinstance(crawl, bool):
             raise Http404(request.data)
         container = Container.get_object(pk=pk)
-        container.set_crawl_ready(value=False)
         resp = {}
-
         if the_name:
             container.name = the_name
             container.save()
@@ -141,7 +140,7 @@ class ContainerRecord(APIView):
         if endpoint:
             depth = config.DEFAULT_CRAWL_DEPTH if crawl else 0
             crawlid = crawl_async(
-                url_list=[endpoint], containerid=container.pk, depth=depth)
+                url_list=[endpoint], container=container, depth=depth)
             resp = {
                 'task': {
                     'href': request.get_full_path(),
@@ -161,10 +160,7 @@ class ContainerRecord(APIView):
         :param format:
         :return:
         """
-        try:
-            obj = Container.get_object(pk=pk)
-        except Container.DoesNotExist:
-            raise Http404
+        obj = self.get_object(pk)
         obj.delete_container()
         return Response({
             'task': {
