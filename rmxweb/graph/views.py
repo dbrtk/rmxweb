@@ -39,6 +39,21 @@ class _View(APIView):
             }
         }
 
+    @staticmethod
+    def container_is_ready(containerid: int = None):
+        """
+        Checking is the dataset is ready to use. Any of the getter below should
+        be returning data if the crawler is running or the integrity check is
+        in progress.
+
+        :param containerid:
+        :return:
+        """
+        container = Container.get_object(pk=containerid)
+        if container.dataset_is_ready():
+            return True
+        return False
+
 
 class Graph(_View):
     """Returns a network graph for a given container id and features number.
@@ -65,6 +80,15 @@ class Graph(_View):
         :param uri:
         :return:
         """
+        # break if the crawler is running or the integrity check in progress
+        if not self.container_is_ready(containerid):
+            return Response(
+                super(Graph, self).http_resp_for_busy(
+                    containerid=containerid,
+                    uri=uri,
+                    msg='Crawler or integrity check in progress.',
+                )
+            )
         stats = GraphReady(
             containerid=containerid,
             features=features
@@ -133,7 +157,16 @@ class Dendrogram(_View):
             raise Http404(params)
         if not isinstance(flat, bool):
             raise Http404(params)
-        serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
+
+        # break if the crawler is running or the integrity check in progress
+        if not self.container_is_ready(containerid):
+            return Response(
+                super().http_resp_for_busy(
+                    containerid=containerid,
+                    uri=request.get_full_path(),
+                    msg='Crawler or integrity check in progress.',
+                )
+            )
         stats = DendrogramReady(containerid=containerid)()
         if not stats.get('ready'):
             return Response(self.http_resp_for_busy(
@@ -154,6 +187,8 @@ class Dendrogram(_View):
                 msg="Dendrogram being computed",
                 uri=request.get_full_path()
             ), status=202)
+        serialiser = SerialiserFactory().get_serialiser('dendrogram_csv')
+
         branch = resp['branch']
         leaf = resp['leaf']
         leaf = self.prepare_data(containerid, leaf)
