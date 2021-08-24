@@ -40,8 +40,6 @@ def integrity_check(containerid: str = None):
     :return:
     """
     obj = Container.get_object(pk=containerid)
-    # todo(): delete this line
-    # obj.set_integrity_check_in_progress()
     celery.send_task(
         NLP_TASKS['integrity_check'],
         kwargs={
@@ -54,13 +52,14 @@ def integrity_check(containerid: str = None):
 @celery.task
 @trackprogress(dtype=INTEGRITY_CHECK_CALLBACK_PREFIX)
 def integrity_check_callback(containerid: int = None, path: str = None):
-    """Task called after the integrity check succeeds on the level of NLP."""
-    container = Container.get_object(pk=containerid)
-    container.toggle_container_ready()
-    if not container.container_ready:
-        raise RuntimeError(
-            f"The container ({container}) should be ready to use."
-        )
+    """
+    Task called after the integrity check succeeds on the level of NLP. This
+    task is a placeholder for trackprogress.
+
+    :param containerid: the container id
+    :param path: the path
+    """
+    pass
 
 
 @celery.task
@@ -80,42 +79,6 @@ def delete_data_from_container(
         )
 
 
-# @celery.task
-# def process_crawl_resp(resp, containerid, crawlid):
-#     """
-#     Processing the response of the crawler. This task checks if the crawl is
-#     ready and if it finished. If yes, the integrity_check is called.
-#
-#     This task processes the response form crawl_metrics.
-#     :param resp:
-#     :param containerid:
-#     :return:
-#     """
-#     # todo(): delete this task
-#     # todo(): delete this task
-#     # todo(): delete this task
-#     crawl_status = Container.container_status(containerid)
-#     if resp.get('ready'):
-#         celery.send_task(
-#             SCRASYNC_TASKS['delete_crawl_status'],
-#             kwargs={'containerid': containerid, 'crawlid': crawlid}
-#         )
-#         container = Container.get_object(pk=containerid)
-#
-#         container.set_crawl_ready(value=True)
-#         if not crawl_status['integrity_check_in_progress']:
-#             celery.send_task(
-#                 RMXWEB_TASKS['integrity_check'],
-#                 kwargs={'containerid': containerid}
-#             )
-#     else:
-#         celery.send_task(
-#             RMXWEB_TASKS['monitor_crawl'],
-#             args=[containerid],
-#             countdown=CRAWL_MONITOR_COUNTDOWN
-#         )
-
-
 @celery.task
 def monitor_crawl(containerid: int = None, crawlid: str = None):
     """This task takes care of the crawl callback.
@@ -124,7 +87,7 @@ def monitor_crawl(containerid: int = None, crawlid: str = None):
        receiving a list of endpoints from the scrapper.
     """
     container = Container.get_object(pk=containerid)
-    if container.crawl_is_ready() and not container.container_ready:
+    if container.crawl_is_ready():
         # making sure that there is no integrity check in progress
         if container.integrity_check_is_ready():
             celery.send_task(
@@ -141,77 +104,6 @@ def monitor_crawl(containerid: int = None, crawlid: str = None):
             },
             countdown=CRAWL_MONITOR_COUNTDOWN
         )
-
-
-# # todo(): delete this should be in prom
-# @celery.task
-# def crawl_metrics(containerid: int = None):
-#     """
-#     Querying all metrics for scrasync
-#     the response = {
-#         'status': 'success',
-#         'data': {
-#             'resultType': 'vector',
-#             'result': [{
-#                 'metric': {
-#                     '__name__': 'create_from_webpage__lastcall_<containerid>',
-#                     'job': 'scrasync'
-#                 },
-#                 'value': [1613125321.823, '1613125299.354587']
-#             }, {
-#                 'metric': {
-#                     '__name__': 'create_from_webpage__succes_<containerid>',
-#                     'job': 'scrasync'
-#                 }, 'value': [1613125321.823, '1613125299.3545368']
-#             }]
-#         }
-#     }
-#     """
-#     # todo(): delete this
-#     # todo(): delete this
-#     # todo(): delete this
-#     ready = False
-#
-#     exception = f'{CREATE_DATA_PREFIX}__exception_{containerid}'
-#     success = f'{CREATE_DATA_PREFIX}__succes_{containerid}'
-#     lastcall = f'{CREATE_DATA_PREFIX}__lastcall_{containerid}'
-#     query = '{{__name__=~"{success}|{lastcall}|{exception}",job="{job}"}}'\
-#         .format(
-#             success=success,
-#             exception=exception,
-#             lastcall=lastcall,
-#             job=PROMETHEUS_JOB
-#         )
-#     endpoint = f'http://{PROMETHEUS_URL}/query?query={query}'
-#     del_endpoint = 'http://{}/admin/tsdb/delete_series?match={}'.format(
-#         PROMETHEUS_URL, query
-#     )
-#     resp = requests.get(endpoint)
-#     resp = resp.json()
-#     result = resp.get('data', {}).get('result', [])
-#     if not result:
-#         # This is returned when there are no results; the crawl is finished
-#         # and the container is ready.
-#         return {
-#             'ready': True,
-#             'result': result,
-#             'msg': 'no records in prometheus',
-#             'containerid': containerid
-#         }
-#     lastcall_obj = next(
-#         _ for _ in result
-#         if _.get('metric').get('__name__') == lastcall
-#     )
-#     lastcall_val = float(lastcall_obj['value'][1])
-#     if time.time() - SECONDS_AFTER_LAST_CALL > lastcall_val:
-#         ready = True
-#         # resp = requests.post(del_endpoint)
-#     return {
-#         'containerid': containerid,
-#         'ready': ready,
-#         'msg': 'crawl ready',
-#         'result': result
-#     }
 
 
 @celery.task

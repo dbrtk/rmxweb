@@ -7,7 +7,7 @@ from .csv_serialiser import CsvSerialiser
 from .serialiser_factory import SerialiserFactory
 
 CONTAINER_COLUMNS = [
-    'pk', 'name', 'container_ready', 'created', 'updated', 'uid'
+    'pk', 'name', 'created', 'updated', 'uid'
 ]
 
 DOC_COLUMNS = [
@@ -24,7 +24,6 @@ CONFIG = {
         'container': {
             'pk': 'integer',
             'name': 'string',
-            'container_ready': 'boolean',
             'created': 'datetime',
             'updated': 'datetime',
             'uid': 'string'

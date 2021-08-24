@@ -189,9 +189,11 @@ class Link(models.Model):
         :param data:
         :return:
         """
-        cls(url=url,
+        cls(
+            url=url,
             hostname=urllib.parse.urlparse(url).hostname,
-            data=data).save()
+            data=data
+        ).save()
 
 
 def create_data_obj(container_id: int = None,

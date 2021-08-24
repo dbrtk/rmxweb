@@ -1,24 +1,20 @@
 import time
 
 from .base import Namespace, Q
-from rmxweb.config import (
-    PROMETHEUS_JOB,
-    PROMETHEUS_URL,
-    SECONDS_AFTER_LAST_CALL,
-)
+from rmxweb.config import SECONDS_AFTER_LAST_CALL
 
 
 class QueryPrometheus(Namespace):
     """
     Querying Prometheus for metrics and stats.
     """
-    time_after_last_call = SECONDS_AFTER_LAST_CALL
 
     def __init__(
             self,
             *args,
             containerid: (int, str) = None,
             features: int = None,
+            time_after_last_call: int = SECONDS_AFTER_LAST_CALL,
             **kwds
     ):
         """
@@ -27,6 +23,7 @@ class QueryPrometheus(Namespace):
         :param features:
         :param kwds:
         """
+        self.time_after_last_call = time_after_last_call
         super(QueryPrometheus, self).__init__(
             *args,
             containerid=containerid,
@@ -144,6 +141,14 @@ class RunProcessMetrics(object):
             features: int = None,
             **kwds
     ):
+        """
+
+        :param run_dtype:
+        :param callback_dtype:
+        :param containerid:
+        :param features:
+        :param kwds:
+        """
         # run namespace
         self.run_n = Namespace(
             dtype=run_dtype,

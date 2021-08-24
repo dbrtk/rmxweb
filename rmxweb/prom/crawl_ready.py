@@ -1,6 +1,7 @@
 
 from .config import CREATE_DATA_PREFIX
 from .query import QueryPrometheus
+from rmxweb.config import CRAWL_MONITOR_COUNTDOWN, SECONDS_AFTER_LAST_CALL
 
 
 class CrawlReady(object):
@@ -26,10 +27,24 @@ class CrawlReady(object):
         }
     }
     """
-    def __init__(self, containerid: int = None):
+    def __init__(self, containerid: int = None, client_request: bool = False):
+        """
+
+        :param containerid:
+        :param client_request:
+        """
+        if client_request:
+            # making a delay for requests made by the client. This is to ensure
+            # that the integrity check records are in prometheus before
+            # returning an object that contains ready set to True.
+            time_after_last_call = CRAWL_MONITOR_COUNTDOWN +\
+                                   SECONDS_AFTER_LAST_CALL + 5
+        else:
+            time_after_last_call = SECONDS_AFTER_LAST_CALL
         self.stats = QueryPrometheus(
             dtype=CREATE_DATA_PREFIX,
             containerid=containerid,
+            time_after_last_call=time_after_last_call
         )
 
     def __call__(self):

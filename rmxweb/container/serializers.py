@@ -11,7 +11,6 @@ class ContainerSerializer(serializers.ModelSerializer):
         fields = [
             'pk',
             'name',
-            'container_ready',
             'created',
             'updated',
             'uid'

@@ -25,13 +25,14 @@ def crawl_async(url_list: list = None, container=None, depth=1):
     """Starting the crawler in scrasync. Starting the task that will monitor
        the crawler.
     """
-    if container.container_ready:
-        container.toggle_container_ready(crawl_ready=False)
-    crawlid = celery.send_task(SCRASYNC_TASKS['launch_crawl'], kwargs={
-        'endpoint': url_list,
-        'containerid': container.pk,
-        'depth': depth
-    }).get()
+    crawlid = celery.send_task(
+        SCRASYNC_TASKS['launch_crawl'],
+        kwargs={
+            'endpoint': url_list,
+            'containerid': container.pk,
+            'depth': depth
+        }
+    ).get()
     # the countdown argument is here to make sure that this task does not
     # start immediately as prometheus may be empty.
     celery.send_task(
