@@ -4,7 +4,7 @@ from .base import Namespace, Q
 from rmxweb.config import SECONDS_AFTER_LAST_CALL
 
 
-class QueryPrometheus(Namespace):
+class LastCall(Namespace):
     """
     Querying Prometheus for metrics and stats.
     """
@@ -24,7 +24,7 @@ class QueryPrometheus(Namespace):
         :param kwds:
         """
         self.time_after_last_call = time_after_last_call
-        super(QueryPrometheus, self).__init__(
+        super(LastCall, self).__init__(
             *args,
             containerid=containerid,
             features=features,
@@ -39,7 +39,7 @@ class QueryPrometheus(Namespace):
         Returns task names to query metrics on prometheus.
         :return:
         """
-        return self.success_name, self.exception_name, self.lastcall_name
+        return self.enter_name, self.exit_name
 
     def stat_for_last_call(self):
         """
@@ -47,41 +47,24 @@ class QueryPrometheus(Namespace):
         less than 30 seconds ago. The time is defined in the
         `time_after_last_call` class variable.
         """
-        exception = self.last_call_exception()
-        if exception:
-            value = float(exception['value'][1])
-            return self.exception_response(value=value)
-
         if not self.q.result:
             self.ready = True
             return self.no_results_response()
 
-        last_call_rec = self.q.get_record(name=self.lastcall_name)
-        if not last_call_rec:
-            return self.no_results_response()
-        last_call_val = float(last_call_rec['value'][1])
-        if time.time() - self.time_after_last_call > last_call_val:
+        exit_record = self.q.get_record(name=self.exit_name)
+        if not exit_record:
+            enter_record = self.q.get_record(name=self.enter_name)
+            if enter_record:
+                if self.q.record_outdated(enter_record):
+                    self.ready = True
+                else:
+                    self.ready = False
+                return self.response(float(enter_record['value'][1]))
+
+        exit_val = float(exit_record['value'][1])
+        if time.time() - self.time_after_last_call > exit_val:
             self.ready = True
-        return self.response()
-
-    def last_call_exception(self):
-        """
-        This is called when there is any `last_called` record in prometheus. It
-        returns the value of the record that holds the exception.
-        """
-        exception = self.q.get_record(name=self.exception_name)
-        if exception:
-            value = float(exception['value'][1])
-            return self.exception_response(value=value)
-        return
-
-    def last_call_success(self):
-        """Returns the last success response."""
-        success = self.q.get_record(name=self.success_name)
-        if success:
-            value = float(success['value'][1])
-            return self.response(value=value)
-        return
+        return self.response(exit_val)
 
     def response_message(self):
         return f"The requested dataset is " \
@@ -114,24 +97,8 @@ class QueryPrometheus(Namespace):
             'containerid': self.containerid
         }
 
-    def exception_response(self, value: float = None):
-        """
-        Returns an exception response.
 
-        :param value:
-        :return:
-        """
-        return {
-            'containerid': self.containerid,
-            'ready': self.ready,
-            'value': value,
-            'msg': 'There was an exception while processing your request',
-            'error': True,
-            'result': self.q.result
-        }
-
-
-class RunProcessMetrics(object):
+class RunningProcess(object):
 
     def __init__(
             self,
@@ -169,42 +136,44 @@ class RunProcessMetrics(object):
     def metrics_names(self):
 
         return (
-            self.run_n.lastcall_name,
-            self.run_n.success_name,
-            self.run_n.exception_name,
-            self.callback_n.lastcall_name,
-            self.callback_n.exception_name,
-            self.callback_n.success_name,
+            self.run_n.enter_name,
+            self.run_n.exit_name,
+            self.callback_n.enter_name,
+            self.callback_n.exit_name,
         )
+
+    @staticmethod
+    def resp_for_busy(record):
+        """
+        Response for status busy.
+
+        :param record: record from prometheus
+        :return:
+        """
+        return {
+            "ready": False,
+            "busy": True,
+            "message": "computing data",
+            "record": record
+        }
 
     def stat_for_last_call(self):
         """
 
         :return:
         """
-        c_success = self.q.get_record(self.callback_n.success_name)
-        if c_success:
+        c_exit = self.q.get_record(self.callback_n.exit_name)
+        if c_exit:
             return {
                 "ready": True,
-                "record": c_success,
+                "record": c_exit,
             }
-        else:
-            c_exception = self.q.get_record(self.callback_n.exception_name)
-            if c_exception:
-                return self.exception_response(c_exception)
-
-        r_success = self.q.get_record(self.run_n.success_name)
-        if r_success:
-            if not self.record_outdated(r_success):
-                return {
-                    "ready": False,
-                    "message": "computing data",
-                    "record": r_success
-                }
-        else:
-            r_exception = self.q.get_record(self.run_n.exception_name)
-            if r_exception:
-                return self.exception_response(r_exception)
+        record = self.q.get_record(self.callback_n.enter_name) or \
+            self.q.get_record(self.run_n.exit_name) or \
+            self.q.get_record(self.run_n.enter_name)
+        if record:
+            if not self.q.record_outdated(record):
+                return self.resp_for_busy(record)
         return {
             "ready": True,
             "message": "No records in prometheus!"
@@ -217,21 +186,3 @@ class RunProcessMetrics(object):
             "message": "exception",
             "record": record
         }
-
-    @staticmethod
-    def record_outdated(record):
-        """
-        Checks if the difference between the timestamp in the record and now is
-        greater than 15 minutes.
-        The second value in a prom's sample is a timestamp.
-
-        :param record:
-        :return:
-        """
-        now = time.time()
-        timestamp = record['value'][1]
-        if not isinstance(timestamp, float):
-            timestamp = float(timestamp)
-        if now - timestamp >= 15 * 60:
-            return True
-        return False

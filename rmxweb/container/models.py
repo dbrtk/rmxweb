@@ -12,6 +12,7 @@ from django.db import models
 
 from .emit import get_available_features, get_features
 from prom.crawl_ready import CrawlReady
+from prom.dataset_ready import DatasetReady
 from prom.graph import GraphReady
 from prom.integrity_check import IntegrityCheckReady
 from rmxweb import config
@@ -80,37 +81,42 @@ class Container(models.Model):
         """
         return [_.pk for _ in self.data_set.all()]
 
-    def dataset_is_ready(self, client_request: bool = False):
+    def dataset_is_ready(self):
         """
         Checks if the container is ready. It uses time-series provided by prom.
         It verifies if there is a running crawling processes, or an integrity
         check in progress. This method is used by the client, the user. It is
-        to be used from views that serve data to clients. That's why the client
-        request flag is set to True.
+        to be used from views that serve data to clients.
 
-        :param client_request: True if the request is sent by the client,
-         or through the public api
         :return: True if the dataset is ready, otherwise False
         :rtype: boolean
         """
         return bool(
-            self.crawl_is_ready(client_request=client_request) and
+            self.dataset_is_ready_prom() and
+            self.crawl_is_ready() and
             self.integrity_check_is_ready()
         )
 
-    def crawl_is_ready(self, client_request: bool = False):
+    def crawl_is_ready(self):
         """
         Returns True if scrasync finished crawling.
 
-        :param client_request: True if the request comes form a client, user
         :return: True is the dataset is ready, otherwise False
         :rtype: boolean
         """
-        crawl = CrawlReady(
-            containerid=self.pk,
-            client_request=client_request
-        )()
+        crawl = CrawlReady(containerid=self.pk)()
         return crawl.get('ready', False)
+
+    def dataset_is_ready_prom(self):
+        """
+        Check with prom if the dataset ready flag is true or false.
+
+        :return: True if the crawl and the integrity check are ready, otherwise
+         False
+        :rtype: boolean
+        """
+        out = DatasetReady(containerid=self.pk)()
+        return out.get("ready", False)
 
     def integrity_check_is_ready(self):
         """

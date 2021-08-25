@@ -85,7 +85,7 @@ class ContainerRecord(APIView):
             raise Http404(params)
         container = self.get_object(pk)
 
-        if not container.dataset_is_ready(client_request=True):
+        if not container.dataset_is_ready():
             container_serializer = ContainerSerializer(self.get_object(pk))
             return Response({
                 'task': {

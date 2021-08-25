@@ -6,11 +6,12 @@ from data.models import Data as DataModel
 from .models import Container
 from prom.config import (
     COMPUTE_MATRIX_RUN_PREFIX,
+    CRAWL_CALLBACK_PREFIX,
     CREATE_DATA_PREFIX,
     INTEGRITY_CHECK_CALLBACK_PREFIX,
     INTEGRITY_CHECK_RUN_PREFIX
 )
-from prom.decorator import track_progress, trackprogress
+from prom.decorator import register_with_prom
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN,
     NLP_TASKS,
@@ -32,7 +33,7 @@ class __Error(Error):
 
 
 @celery.task
-@trackprogress(dtype=INTEGRITY_CHECK_RUN_PREFIX)
+@register_with_prom(dtype=INTEGRITY_CHECK_RUN_PREFIX)
 def integrity_check(containerid: str = None):
     """
     Checks the integrity of the container after the crawler finishes.
@@ -50,11 +51,16 @@ def integrity_check(containerid: str = None):
 
 
 @celery.task
-@trackprogress(dtype=INTEGRITY_CHECK_CALLBACK_PREFIX)
+@register_with_prom(
+    dtype=(
+            INTEGRITY_CHECK_CALLBACK_PREFIX,
+            CRAWL_CALLBACK_PREFIX
+    )
+)
 def integrity_check_callback(containerid: int = None, path: str = None):
     """
     Task called after the integrity check succeeds on the level of NLP. This
-    task is a placeholder for trackprogress.
+    task is a placeholder for register_with_prom.
 
     :param containerid: the container id
     :param path: the path
@@ -115,7 +121,7 @@ def test_task(a: int = None, b: int = None) -> dict:
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_MATRIX_RUN_PREFIX)
+@register_with_prom(dtype=COMPUTE_MATRIX_RUN_PREFIX)
 def generate_matrix_remote(
         containerid=None,
         features: int = 10,

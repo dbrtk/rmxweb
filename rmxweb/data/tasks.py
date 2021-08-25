@@ -2,12 +2,12 @@
 
 from .models import Data as DataModel
 from prom.config import CREATE_DATA_PREFIX
-from prom.decorator import trackprogress
+from prom.decorator import register_with_prom
 from rmxweb.celery import celery
 
 
 @celery.task
-@trackprogress(dtype=CREATE_DATA_PREFIX)
+@register_with_prom(dtype=CREATE_DATA_PREFIX)
 def create_from_webpage(containerid: str = None,
                         endpoint: str = None,
                         seed: bool = False,

@@ -1,9 +1,11 @@
 
 import re
+import time
 
+from django.db.models import Model
 import requests
 
-from .config import DURATION, EXCEPTION, LAST_CALL, PROG_PREFIXES, SUCCESS
+from .config import ENTER, EXIT, PROG_PREFIXES
 from rmxweb.config import (
     PROMETHEUS_JOB, PROMETHEUS_URL, SECONDS_AFTER_LAST_CALL
 )
@@ -48,11 +50,17 @@ class Namespace(object):
         if "containerid" in kwds:
             self.containerid = kwds.get("containerid")
         elif "container" in kwds:
-            self.containerid = kwds["container"].pk
+            container = kwds["container"]
+            if not isinstance(container, Model):
+                raise RuntimeError(
+                    f"Expected an instance of a django model. Got {container} "
+                    f"instead."
+                )
+            self.containerid = container.pk
         if "features" in kwds:
-            self.features = kwds.get("features")
+            self.features = int(kwds.get("features"))
         elif "feats" in kwds:
-            self.features = kwds.get("feats")
+            self.features = int(kwds.get("feats"))
 
     @property
     def gname_suffix(self):
@@ -68,20 +76,12 @@ class Namespace(object):
         return suffix
 
     @property
-    def progress_name(self):
-        return f'{self.dtype}__{DURATION}_{self.gname_suffix}'
+    def enter_name(self):
+        return f'{self.dtype}__{ENTER}_{self.gname_suffix}'
 
     @property
-    def lastcall_name(self):
-        return f'{self.dtype}__{LAST_CALL}_{self.gname_suffix}'
-
-    @property
-    def exception_name(self):
-        return f'{self.dtype}__{EXCEPTION}_{self.gname_suffix}'
-
-    @property
-    def success_name(self):
-        return f'{self.dtype}__{SUCCESS}_{self.gname_suffix}'
+    def exit_name(self):
+        return f'{self.dtype}__{EXIT}_{self.gname_suffix}'
 
 
 class Q(object):
@@ -157,3 +157,22 @@ class Q(object):
             )
         except StopIteration:
             return
+
+    @staticmethod
+    def record_outdated(record):
+        """
+        Checks if the difference between the timestamp in the record and now is
+        greater than 15 minutes.
+        The second value in a prom's sample is a timestamp.
+
+        :param record:
+        :return:
+        """
+        now = time.time()
+        timestamp = record['value'][1]
+        if not isinstance(timestamp, float):
+            timestamp = float(timestamp)
+        if now - timestamp >= 15 * 60:
+            return True
+        return False
+

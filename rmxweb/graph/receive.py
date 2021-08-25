@@ -4,12 +4,12 @@ from prom.config import (
     COMPUTE_DENDROGRAM_RUN_PREFIX,
     COMPUTE_MATRIX_CALLBACK_PREFIX,
 )
-from prom.decorator import trackprogress
+from prom.decorator import register_with_prom
 from rmxweb.celery import celery
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_MATRIX_CALLBACK_PREFIX)
+@register_with_prom(dtype=COMPUTE_MATRIX_CALLBACK_PREFIX)
 def compute_matrix_callback(
         containerid: int = None,
         features: int = None,
@@ -31,10 +31,10 @@ def compute_matrix_callback(
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_DENDROGRAM_RUN_PREFIX)
+@register_with_prom(dtype=COMPUTE_DENDROGRAM_RUN_PREFIX)
 def compute_dendrogram_run(containerid: int = None):
     """
-    This task is a placeholder used by prom's trackprogress decorator.
+    This task is a placeholder used by prom's register_with_prom decorator.
     :param containerid:
     :return:
     """
@@ -42,7 +42,7 @@ def compute_dendrogram_run(containerid: int = None):
 
 
 @celery.task
-@trackprogress(dtype=COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
+@register_with_prom(dtype=COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
 def compute_dendrogram_callback(containerid: int = None):
     """Called when the dendrogram is computed. It needs to be here for prom."""
     # print(

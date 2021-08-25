@@ -1,3 +1,6 @@
+CRAWL_RUN_PREFIX = "crawl_run"
+CRAWL_CALLBACK_PREFIX = "crawl_callback"
+
 CREATE_DATA_PREFIX = "create_data"
 
 COMPUTE_DENDROGRAM_RUN_PREFIX = "compute_dendrogram_run"
@@ -10,15 +13,15 @@ INTEGRITY_CHECK_RUN_PREFIX = "integrity_check_run"
 INTEGRITY_CHECK_CALLBACK_PREFIX = "integrity_check_callback"
 
 
-LAST_CALL = 'last_call'
-SUCCESS = 'success'
-EXCEPTION = 'exception'
-DURATION = 'time'
-ACTIVE_PROC = 'active_proc'
+ENTER = 'enter'
+EXIT = 'exit'
 
 PROG_PREFIXES = (
     # this is called when a the function to create Data Objects is called by
     # the scraper, the crawler.
+    CRAWL_RUN_PREFIX,
+    CRAWL_CALLBACK_PREFIX,
+    # called whenever a new webpage is written to the database
     CREATE_DATA_PREFIX,  # - create_from_webpage
 
     # this is called when the dendrogram is being computed

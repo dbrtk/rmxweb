@@ -1,12 +1,12 @@
 
 from .config import COMPUTE_MATRIX_CALLBACK_PREFIX, COMPUTE_MATRIX_RUN_PREFIX
-from .query import RunProcessMetrics
+from .query import RunningProcess
 
 
 class GraphReady(object):
 
     def __init__(self, containerid: int = None, features: int = None):
-        self.stats = RunProcessMetrics(
+        self.stats = RunningProcess(
             callback_dtype=COMPUTE_MATRIX_CALLBACK_PREFIX,
             run_dtype=COMPUTE_MATRIX_RUN_PREFIX,
             containerid=containerid,

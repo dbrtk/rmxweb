@@ -50,7 +50,7 @@ class _View(APIView):
         :return:
         """
         container = Container.get_object(pk=containerid)
-        if container.dataset_is_ready(client_request=True):
+        if container.dataset_is_ready():
             return True
         return False
 
