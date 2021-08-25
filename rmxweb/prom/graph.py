@@ -14,4 +14,4 @@ class GraphReady(object):
         )
 
     def __call__(self, *args, **kwargs):
-        return self.stats.stat_for_last_call()
+        return self.stats.status()

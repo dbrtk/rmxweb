@@ -38,4 +38,4 @@ class CrawlReady(object):
         )
 
     def __call__(self):
-        return self.stats.stat_for_last_call()
+        return self.stats.status()

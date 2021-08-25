@@ -41,7 +41,7 @@ class LastCall(Namespace):
         """
         return self.enter_name, self.exit_name
 
-    def stat_for_last_call(self):
+    def status(self):
         """
         This method checks if a record exists in prom and if it was created
         less than 30 seconds ago. The time is defined in the
@@ -157,7 +157,7 @@ class RunningProcess(object):
             "record": record
         }
 
-    def stat_for_last_call(self):
+    def status(self):
         """
 
         :return:
