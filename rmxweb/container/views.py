@@ -97,6 +97,7 @@ class ContainerRecord(APIView):
                     'summary': container_serializer.data
                 }
             }, status=202)
+
         dataset = container.data_set.all()
 
         # links = []

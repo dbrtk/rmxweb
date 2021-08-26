@@ -7,7 +7,6 @@ from .models import Container
 from prom.config import (
     COMPUTE_MATRIX_RUN_PREFIX,
     CRAWL_CALLBACK_PREFIX,
-    CREATE_DATA_PREFIX,
     INTEGRITY_CHECK_CALLBACK_PREFIX,
     INTEGRITY_CHECK_RUN_PREFIX
 )
@@ -15,11 +14,7 @@ from prom.decorator import register_with_prom
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN,
     NLP_TASKS,
-    PROMETHEUS_JOB,
-    PROMETHEUS_URL,
     RMXWEB_TASKS,
-    SCRASYNC_TASKS,
-    SECONDS_AFTER_LAST_CALL,
 )
 from rmxweb.celery import celery
 

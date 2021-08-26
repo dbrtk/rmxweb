@@ -185,17 +185,21 @@ class Container(models.Model):
     # todo(): review these methods. Do we need to return features?
 
     def features_availability(self, feature_number: int = 10):
-        """ Checking feature's availability. """
+        """
+        Checking feature's availability.
 
+        :param feature_number:
+        :return:
+        """
         gstat = GraphReady(containerid=self.pk, features=feature_number)()
-        istat = IntegrityCheckReady(containerid=self.pk)()
+        dstat = DatasetReady(containerid=self.pk)()
         assert isinstance(gstat.get("ready"), bool)
-        assert isinstance(istat.get("ready"), bool)
-        features_are_ready = bool(gstat.get("ready") and istat.get("ready"))
-
+        assert isinstance(dstat.get("ready"), bool)
+        features_are_ready = bool(gstat.get("ready") and dstat.get("ready"))
         out = {
             'requested_features': feature_number,
             'containerid': self.pk,
+            'ready': features_are_ready,
             'busy': not features_are_ready  # False
         }
         if features_are_ready:

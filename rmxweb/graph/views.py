@@ -50,11 +50,6 @@ class _View(APIView):
         :param containerid:
         :return:
         """
-        # container = Container.get_object(pk=containerid)
-        # if container.dataset_is_ready():
-        #     return True
-        # return False
-
         stats = DatasetReady(containerid=containerid)()
         return stats.get("ready", False)
 
@@ -84,35 +79,7 @@ class Graph(_View):
         :param uri:
         :return:
         """
-        # break if the crawler is running or the integrity check in progress
-        if not self.container_is_ready(containerid):
-            return Response(
-                super(Graph, self).http_resp_for_busy(
-                    containerid=containerid,
-                    uri=uri,
-                    msg='Crawler or integrity check in progress.',
-                )
-            )
-        stats = GraphReady(
-            containerid=containerid,
-            features=features
-        )()
-        if not stats.get('ready'):
-            return Response(
-                super().http_resp_for_busy(
-                    containerid=containerid,
-                    uri=uri,
-                    msg='Graph being computed',
-                    payload={
-                        'containerid': containerid,
-                        'words': words,
-                        'features': features,
-                        'docsperfeat': docsperfeat,
-                        'featsperdoc': featsperdoc
-                    }
-                ), status=202)
 
-        serialiser = SerialiserFactory().get_serialiser('graph_csv')
         data = get_graph(
             containerid=containerid, words=words, features=features,
             featsperdoc=featsperdoc, docsperfeat=docsperfeat
@@ -124,10 +91,10 @@ class Graph(_View):
                     payload=data,
                     uri=uri,
                     msg='Graph being computed',
-
                 ),
                 status=202
             )
+        serialiser = SerialiserFactory().get_serialiser('graph_csv')
         serialiser = serialiser(data)
         zip_name = serialiser.get_zip_name(
             f'Network-Graph-ContainerID-{containerid}')
@@ -161,25 +128,23 @@ class Dendrogram(_View):
             raise Http404(params)
         if not isinstance(flat, bool):
             raise Http404(params)
-
-        # break if the crawler is running or the integrity check in progress
-        if not self.container_is_ready(containerid):
+        dat_stats = DatasetReady(containerid=containerid)()
+        den_stats = DendrogramReady(containerid=containerid)()
+        dat_ready = dat_stats.get("ready", False)
+        den_ready = den_stats.get("ready", False)
+        if not bool(dat_ready and den_ready):
+            msg = 'The system is busy.'
+            if not dat_ready:
+                msg = 'Crawler or integrity check in progress.'
+            elif not den_ready:
+                msg = 'Dendrogram being computed.'
             return Response(
                 super().http_resp_for_busy(
                     containerid=containerid,
                     uri=request.get_full_path(),
-                    msg='Crawler or integrity check in progress.',
+                    msg=msg,
                 )
             )
-        stats = DendrogramReady(containerid=containerid)()
-        if not stats.get('ready'):
-            return Response(self.http_resp_for_busy(
-                containerid=containerid,
-                uri=request.get_full_path(),
-                msg='Dendrogram being computed',
-                payload=stats,
-            ), status=202)
-
         resp = hierarchical_tree(containerid=containerid, flat=flat)
         if not resp['success']:
             # In this case, the system is busy or there is an issue.

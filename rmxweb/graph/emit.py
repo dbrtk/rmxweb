@@ -2,8 +2,11 @@
 import typing
 
 from container.decorators import feats_available
+from prom.config import COMPUTE_DENDROGRAM_RUN_PREFIX
+from prom.decorator import register_with_prom
+from prom.dendrogram import DendrogramReady
 from rmxweb.celery import celery
-from rmxweb.config import NLP_TASKS, RMXGREP_TASK, RMXWEB_TASKS
+from rmxweb.config import NLP_TASKS, RMXGREP_TASK
 
 
 def search_texts(words: typing.List[str] = None, highlight: bool = None,
@@ -23,15 +26,44 @@ def search_texts(words: typing.List[str] = None, highlight: bool = None,
         }).get()
 
 
+@register_with_prom(dtype=COMPUTE_DENDROGRAM_RUN_PREFIX)
+def compute_dendrogram(containerid: int = None):
+    """
+    Computing the dendrogram for a given containerid.
+
+    :param containerid:
+    """
+    celery.send_task(
+        NLP_TASKS['compute_dendrogram'],
+        kwargs={
+            'containerid': containerid
+        }
+    )
+    return {"ready": False, "busy": True}
+
+
 @feats_available
-def hierarchical_tree(containerid=None, flat: bool = None, **_) -> dict:
+def hierarchical_tree(containerid: int = None, flat: bool = None, **_) -> dict:
     """
     :param containerid:
     :param container:
     :param flat:
     :return:
     """
-    return celery.send_task(NLP_TASKS['hierarchical_tree'], kwargs={
-        'containerid': containerid,
-        'flat': flat,
-    }).get(timeout=3)
+    resp = celery.send_task(
+        NLP_TASKS['hierarchical_tree'],
+         kwargs={
+            'containerid': containerid,
+            'flat': flat,
+        }
+    ).get(timeout=3)
+    if resp.get("success"):
+        return resp
+
+    # check whether nlp is runnning the same process
+    stats = DendrogramReady(containerid=containerid)()    
+    if not stats.get("ready", False):
+        return {"success": False, "busy": True, "payload": stats}
+
+    compute_dendrogram(containerid=containerid)
+    return {"success": False, "busy": True}

@@ -106,6 +106,8 @@ NLP_TASKS = {
     'retrieve_features': 'nlp.task.retrieve_features',
 
     'hierarchical_tree': 'nlp.task.hierarchical_tree',
+
+    'compute_dendrogram': 'nlp.task.compute_dendrogram',
 }
 
 RMXGREP_TASK = {
