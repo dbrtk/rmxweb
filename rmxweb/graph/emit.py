@@ -39,7 +39,6 @@ def compute_dendrogram(containerid: int = None):
             'containerid': containerid
         }
     )
-    return {"ready": False, "busy": True}
 
 
 @feats_available
@@ -52,7 +51,7 @@ def hierarchical_tree(containerid: int = None, flat: bool = None, **_) -> dict:
     """
     resp = celery.send_task(
         NLP_TASKS['hierarchical_tree'],
-         kwargs={
+        kwargs={
             'containerid': containerid,
             'flat': flat,
         }
@@ -61,7 +60,7 @@ def hierarchical_tree(containerid: int = None, flat: bool = None, **_) -> dict:
         return resp
 
     # check whether nlp is runnning the same process
-    stats = DendrogramReady(containerid=containerid)()    
+    stats = DendrogramReady(containerid=containerid)()
     if not stats.get("ready", False):
         return {"success": False, "busy": True, "payload": stats}
 
