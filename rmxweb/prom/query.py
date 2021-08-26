@@ -162,8 +162,12 @@ class RunningProcess(object):
 
         :return:
         """
+        print(f"\n\n\ninside RunningProcess.status")
+        print(f"run dtype: {self.run_n.dtype}")
+        print(f"callback dtype: {self.callback_n.dtype}")
         c_exit = self.q.get_record(self.callback_n.exit_name)
         if c_exit:
+            print(f"callback_exit -> ready: {c_exit}")
             return {
                 "ready": True,
                 "record": c_exit,
@@ -171,9 +175,16 @@ class RunningProcess(object):
         record = self.q.get_record(self.callback_n.enter_name) or \
             self.q.get_record(self.run_n.exit_name) or \
             self.q.get_record(self.run_n.enter_name)
+
+        print(f"any other record: {record}")
+
         if record:
             if not self.q.record_outdated(record):
+                print("record is valid -> busy")
                 return self.resp_for_busy(record)
+
+        print("No records in the data store -> ready\n\n\n")
+
         return {
             "ready": True,
             "message": "No records in prometheus!"

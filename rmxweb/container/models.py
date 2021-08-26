@@ -83,19 +83,21 @@ class Container(models.Model):
 
     def dataset_is_ready(self):
         """
-        Checks if the container is ready. It uses time-series provided by prom.
         It verifies if there is a running crawling processes, or an integrity
-        check in progress. This method is used by the client, the user. It is
-        to be used from views that serve data to clients.
+        check in progress. This method is used by the client, the user.
 
-        :return: True if the dataset is ready, otherwise False
+        :return: True if the crawl and the integrity check are ready, otherwise
+         False
         :rtype: boolean
         """
-        return bool(
-            self.dataset_is_ready_prom() and
-            self.crawl_is_ready() and
-            self.integrity_check_is_ready()
-        )
+        # todo(): delete this bit
+        # return bool(
+        #     self.dataset_is_ready_prom() and
+        #     self.crawl_is_ready() and
+        #     self.integrity_check_is_ready()
+        # )
+        out = DatasetReady(containerid=self.pk)()
+        return out.get("ready", False)
 
     def crawl_is_ready(self):
         """
@@ -106,17 +108,6 @@ class Container(models.Model):
         """
         crawl = CrawlReady(containerid=self.pk)()
         return crawl.get('ready', False)
-
-    def dataset_is_ready_prom(self):
-        """
-        Check with prom if the dataset ready flag is true or false.
-
-        :return: True if the crawl and the integrity check are ready, otherwise
-         False
-        :rtype: boolean
-        """
-        out = DatasetReady(containerid=self.pk)()
-        return out.get("ready", False)
 
     def integrity_check_is_ready(self):
         """

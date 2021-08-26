@@ -58,9 +58,9 @@ class Namespace(object):
                 )
             self.containerid = container.pk
         if "features" in kwds:
-            self.features = int(kwds.get("features"))
+            self.features = kwds.get("features")
         elif "feats" in kwds:
-            self.features = int(kwds.get("feats"))
+            self.features = kwds.get("feats")
 
     @property
     def gname_suffix(self):

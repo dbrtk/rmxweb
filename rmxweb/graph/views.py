@@ -10,6 +10,7 @@ from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
 
+from prom.dataset_ready import DatasetReady
 from prom.dendrogram import DendrogramReady
 from prom.graph import GraphReady
 from serialisers import SerialiserFactory
@@ -49,10 +50,13 @@ class _View(APIView):
         :param containerid:
         :return:
         """
-        container = Container.get_object(pk=containerid)
-        if container.dataset_is_ready():
-            return True
-        return False
+        # container = Container.get_object(pk=containerid)
+        # if container.dataset_is_ready():
+        #     return True
+        # return False
+
+        stats = DatasetReady(containerid=containerid)()
+        return stats.get("ready", False)
 
 
 class Graph(_View):

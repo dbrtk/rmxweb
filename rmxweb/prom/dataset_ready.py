@@ -6,7 +6,7 @@ from .query import RunningProcess
 
 class DatasetReady(object):
 
-    def __init__(self, containerid: int):
+    def __init__(self, containerid: int = None):
 
         self.stats = RunningProcess(
             containerid=containerid,
