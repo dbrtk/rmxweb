@@ -26,7 +26,7 @@ def search_texts(words: typing.List[str] = None, highlight: bool = None,
         }).get()
 
 
-@register_with_prom(dtype=COMPUTE_DENDROGRAM_RUN_PREFIX)
+@register_with_prom(COMPUTE_DENDROGRAM_RUN_PREFIX)
 def compute_dendrogram(containerid: int = None):
     """
     Computing the dendrogram for a given containerid.

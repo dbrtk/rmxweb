@@ -90,12 +90,6 @@ class Container(models.Model):
          False
         :rtype: boolean
         """
-        # todo(): delete this bit
-        # return bool(
-        #     self.dataset_is_ready_prom() and
-        #     self.crawl_is_ready() and
-        #     self.integrity_check_is_ready()
-        # )
         out = DatasetReady(containerid=self.pk)()
         return out.get("ready", False)
 
@@ -280,12 +274,17 @@ class Container(models.Model):
     def docs_to_json(docs, data_set):
         """
         """
+        out = []
         for doc in docs:
-            _ = next(_ for _ in data_set if _.dataid == doc.get('dataid'))
+            try:
+                _ = next(_ for _ in data_set if _.dataid == doc.get('dataid'))
+            except StopIteration as err:
+                continue
             doc['url'] = _.url
             doc['title'] = _.title
             doc['pk'] = _.pk
-        return docs
+            out.append(doc)
+        return out
 
     def get_lemma_words(self, lemma: (str, list) = None):
         """For a list of lemma, returns all the words that can be found in

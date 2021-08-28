@@ -168,12 +168,18 @@ class RunningProcess(object):
                 "ready": True,
                 "record": c_exit,
             }
-        record = self.q.get_record(self.callback_n.enter_name) or \
-            self.q.get_record(self.run_n.exit_name) or \
-            self.q.get_record(self.run_n.enter_name)
+        c_enter = self.q.get_record(self.callback_n.enter_name)
+        r_enter = self.q.get_record(self.run_n.enter_name)
+        r_exit = self.q.get_record(self.run_n.exit_name)
+        record = None
+        if c_enter and not self.q.record_outdated(c_enter):
+            record = c_enter
+        elif r_exit and not self.q.record_outdated(r_exit):
+            record = r_exit
+        elif r_enter and not self.q.record_outdated(r_enter):
+            record = r_enter
         if record:
-            if not self.q.record_outdated(record):
-                return self.resp_for_busy(record)
+            return self.resp_for_busy(record)
         return {
             "ready": True,
             "message": "No records in prometheus!"

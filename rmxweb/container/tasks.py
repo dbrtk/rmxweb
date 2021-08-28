@@ -28,7 +28,7 @@ class __Error(Error):
 
 
 @celery.task
-@register_with_prom(dtype=INTEGRITY_CHECK_RUN_PREFIX)
+@register_with_prom(INTEGRITY_CHECK_RUN_PREFIX)
 def integrity_check(containerid: str = None):
     """
     Checks the integrity of the container after the crawler finishes.
@@ -46,12 +46,7 @@ def integrity_check(containerid: str = None):
 
 
 @celery.task
-@register_with_prom(
-    dtype=(
-            INTEGRITY_CHECK_CALLBACK_PREFIX,
-            CRAWL_CALLBACK_PREFIX
-    )
-)
+@register_with_prom(INTEGRITY_CHECK_CALLBACK_PREFIX, CRAWL_CALLBACK_PREFIX)
 def integrity_check_callback(containerid: int = None, path: str = None):
     """
     Task called after the integrity check succeeds on the level of NLP. This
@@ -116,7 +111,7 @@ def test_task(a: int = None, b: int = None) -> dict:
 
 
 @celery.task
-@register_with_prom(dtype=COMPUTE_MATRIX_RUN_PREFIX)
+@register_with_prom(COMPUTE_MATRIX_RUN_PREFIX)
 def generate_matrix_remote(
         containerid=None,
         features: int = 10,

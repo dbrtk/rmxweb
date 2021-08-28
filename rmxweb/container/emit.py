@@ -24,7 +24,7 @@ def get_available_features(containerid: int = None, folder_path: str = None):
     ).get()
 
 
-@register_with_prom(dtype=CRAWL_RUN_PREFIX)
+@register_with_prom(CRAWL_RUN_PREFIX)
 def crawl_async(url_list: list = None, container=None, depth=1):
     """Starting the crawler in scrasync. Starting the task that will monitor
        the crawler.

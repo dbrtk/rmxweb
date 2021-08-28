@@ -1,7 +1,6 @@
 
 from functools import wraps
 import time
-from typing import AnyStr, Tuple
 
 from prometheus_client import CollectorRegistry, Gauge, push_to_gateway
 
@@ -9,21 +8,17 @@ from .base import Namespace
 from rmxweb.config import PROMETHEUS_JOB, PUSHGATEWAY_HOST, PUSHGATEWAY_PORT
 
 
-def register_with_prom(dtype: (Tuple[AnyStr], str) = None):
+def register_with_prom(*dtype):
     """
     Decorator to register function and task metrics in prometheus.
 
     :param dtype:
     :return:
     """
-
-    if isinstance(dtype, str):
-        dtype = (dtype,)
-
     def inner(func):
 
         @wraps(func)
-        def wrapper(*args, **kwds):
+        def wrapped(*args, **kwds):
             """
             The wrapper for the decorated function.
 
@@ -59,5 +54,5 @@ def register_with_prom(dtype: (Tuple[AnyStr], str) = None):
                 registry=registry
             )
             return out
-        return wrapper
+        return wrapped
     return inner

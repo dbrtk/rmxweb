@@ -7,7 +7,7 @@ from rmxweb.celery import celery
 
 
 @celery.task
-@register_with_prom(dtype=CREATE_DATA_PREFIX)
+@register_with_prom(CREATE_DATA_PREFIX)
 def create_from_webpage(containerid: str = None,
                         endpoint: str = None,
                         seed: bool = False,
