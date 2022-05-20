@@ -43,13 +43,14 @@ SECONDS_AFTER_LAST_CALL = 30
 
 # RabbitMQ configuration
 # rabbitmq rpc queue name
-RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
-RPC_PUBLISH_QUEUES = {
-    'nlp': 'nlp',
-    'scrasync': 'scrasync',
-    'rmxgrep': 'rmxgrep',
-    'extractxt': 'extractxt'
-}
+# todo(): delete these
+# RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
+# RPC_PUBLISH_QUEUES = {
+#     'nlp': 'nlp',
+#     'scrasync': 'scrasync',
+#     'rmxgrep': 'rmxgrep',
+#     'extractxt': 'extractxt'
+# }
 # RabbitMQ login credentials
 
 # =========================================<
