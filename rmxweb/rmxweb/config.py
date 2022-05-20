@@ -84,3 +84,10 @@ OUTPUT_TYPE_JSON = os.environ.get('OUTPUT_TYPE_JSON', False)
 # available data formats for http responses
 AVAILABLE_FORMATS = ['json', 'csv']
 
+# REDIS CONFIG FOR METRICS
+
+REDIS_METRICS_HOST = os.environ.get('REDIS_HOST')
+REDIS_METRICS_PASS = os.environ.get('REDIS_PASS')
+REDIS_METRICS_DB_NUMBER = os.environ.get('REDIS_DB_NUMBER')
+REDIS_METRICS_DB_PORT = os.environ.get('REDIS_PORT')
+
