@@ -2,16 +2,17 @@
 import os
 import re
 
+# todo(): delete rabbit related stuff
 # RabbitMQ login credentials
-RPC_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS')
-RPC_USER = os.environ.get('RABBITMQ_DEFAULT_USER')
-RPC_VHOST = os.environ.get('RABBITMQ_DEFAULT_VHOST')
+# RPC_PASS = os.environ.get('RABBITMQ_DEFAULT_PASS')
+# RPC_USER = os.environ.get('RABBITMQ_DEFAULT_USER')
+# RPC_VHOST = os.environ.get('RABBITMQ_DEFAULT_VHOST')
 
 # the host to which the rpc broker (rabbitmq) is deployed
-RPC_HOST = os.environ.get('RABBITMQ_HOST')
-RPC_PORT = os.environ.get('RABBITMQ_PORT', 5672)
+# RPC_HOST = os.environ.get('RABBITMQ_HOST')
+# RPC_PORT = os.environ.get('RABBITMQ_PORT', 5672)
+# RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
 
-RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
 
 # REDIS CONFIG
 # celery, redis (auth access) configuration. Reids is being used as a result
@@ -22,13 +23,17 @@ REDIS_DB_NUMBER = os.environ.get('REDIS_DB_NUMBER')
 REDIS_PORT = os.environ.get('REDIS_PORT')
 
 
+# todo(): delete these
 # broker_url = 'amqp://myuser:mypassword@localhost:5672/myvhost'
-_url = f'amqp://{RPC_USER}:{RPC_PASS}@{RPC_HOST}:{RPC_PORT}/{RPC_VHOST}'
+# _url = f'amqp://{RPC_USER}:{RPC_PASS}@{RPC_HOST}:{RPC_PORT}/{RPC_VHOST}'
 
-broker_url = _url
+_redis_url = f'redis://:{REDIS_PASS}@{BROKER_HOST_NAME}:{REDIS_PORT}/{REDIS_DB_NUMBER}'
+
+
+broker_url = _redis_url
 
 # redis result backend
-result_backend = f'redis://:{REDIS_PASS}@{BROKER_HOST_NAME}:{REDIS_PORT}/{REDIS_DB_NUMBER}'
+result_backend = _redis_url
 
 result_persistent = True
 
