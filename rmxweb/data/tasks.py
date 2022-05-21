@@ -2,12 +2,12 @@
 
 from .models import Data as DataModel
 from metrics.config import CREATE_DATA_PREFIX
-from metrics.decorator import register_with_prom
+from metrics.decorator import register_metrics
 from rmxweb.celery import celery
 
 
 @celery.task
-@register_with_prom(CREATE_DATA_PREFIX)
+@register_metrics(CREATE_DATA_PREFIX)
 def create_from_webpage(containerid: str = None,
                         endpoint: str = None,
                         seed: bool = False,

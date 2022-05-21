@@ -3,7 +3,7 @@ import typing
 
 from container.decorators import feats_available
 from metrics.config import COMPUTE_DENDROGRAM_RUN_PREFIX
-from metrics.decorator import register_with_prom
+from metrics.decorator import register_metrics
 from metrics.dendrogram import DendrogramReady
 from rmxweb.celery import celery
 from rmxweb.config import NLP_TASKS, RMXGREP_TASK
@@ -26,7 +26,7 @@ def search_texts(words: typing.List[str] = None, highlight: bool = None,
         }).get()
 
 
-@register_with_prom(COMPUTE_DENDROGRAM_RUN_PREFIX)
+@register_metrics(COMPUTE_DENDROGRAM_RUN_PREFIX)
 def compute_dendrogram(containerid: int = None):
     """
     Computing the dendrogram for a given containerid.

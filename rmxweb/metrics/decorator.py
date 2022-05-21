@@ -6,7 +6,7 @@ from .namespace import Namespace
 from .redis import RedisConnect
 
 
-def register_with_prom(*dtype):
+def register_metrics(*dtype):
     """
     Decorator to register function and task in metrics that are saved in redis.
 

@@ -3,12 +3,12 @@ from metrics.config import (
     COMPUTE_DENDROGRAM_CALLBACK_PREFIX,
     COMPUTE_MATRIX_CALLBACK_PREFIX,
 )
-from metrics.decorator import register_with_prom
+from metrics.decorator import register_metrics
 from rmxweb.celery import celery
 
 
 @celery.task
-@register_with_prom(COMPUTE_MATRIX_CALLBACK_PREFIX)
+@register_metrics(COMPUTE_MATRIX_CALLBACK_PREFIX)
 def compute_matrix_callback(
         containerid: int = None,
         features: int = None,
@@ -26,7 +26,7 @@ def compute_matrix_callback(
 
 
 @celery.task
-@register_with_prom(COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
+@register_metrics(COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
 def compute_dendrogram_callback(containerid: int = None):
     """Called when the dendrogram is computed. It needs to be here for metrics."""
     pass
