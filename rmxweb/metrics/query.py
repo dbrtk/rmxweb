@@ -6,7 +6,7 @@ from rmxweb.config import SECONDS_AFTER_LAST_CALL
 
 class LastCall(Namespace):
     """
-    Querying Prometheus for metrics and stats.
+    Querying Redis for metrics and stats.
     """
 
     def __init__(
@@ -36,14 +36,14 @@ class LastCall(Namespace):
     @property
     def metrics_names(self):
         """
-        Returns task names to query metrics on prometheus.
+        Returns task names to query metrics in redis.
         :return:
         """
         return self.enter_name, self.exit_name
 
     def status(self):
         """
-        This method checks if a record exists in prom and if it was created
+        This method checks if a record exists in redis and if it was created
         less than 30 seconds ago. The time is defined in the
         `time_after_last_call` class variable.
         """
@@ -51,20 +51,25 @@ class LastCall(Namespace):
             self.ready = True
             return self.no_results_response()
 
-        exit_record = self.q.get_record(name=self.exit_name)
-        if not exit_record:
-            enter_record = self.q.get_record(name=self.enter_name)
-            if enter_record:
-                if self.q.record_outdated(enter_record):
+        exit_time = self.q.result.get(self.exit_name)
+        if not exit_time:
+            enter_time = self.q.result.get(self.enter_name)
+            if enter_time:
+                if self.q.record_outdated(enter_time):
                     self.ready = True
+                    self.q.del_record(self.enter_name)
                 else:
                     self.ready = False
-                return self.response(float(enter_record['value'][1]))
+                return self.response(enter_time)
 
-        exit_val = float(exit_record['value'][1])
-        if time.time() - self.time_after_last_call > exit_val:
+        if not isinstance(exit_time, float):
+            exit_time = float(exit_time)
+        if time.time() - self.time_after_last_call > exit_time:
             self.ready = True
-        return self.response(exit_val)
+            self.q.del_record(self.exit_name)
+        else:
+            self.ready = False
+        return self.response(exit_time)
 
     def response_message(self):
         return f"The requested dataset is " \
@@ -93,7 +98,7 @@ class LastCall(Namespace):
         return {
             'ready': self.ready,
             'result': self.q.result,
-            'msg': 'No records in prometheus.',
+            'msg': 'No records in redis.',
             'containerid': self.containerid
         }
 
@@ -143,18 +148,18 @@ class RunningProcess(object):
         )
 
     @staticmethod
-    def resp_for_busy(record):
+    def resp_for_busy(timestamp):
         """
         Response for status busy.
 
-        :param record: record from prometheus
+        :param timestamp: the timestamp
         :return:
         """
         return {
             "ready": False,
             "busy": True,
             "message": "computing data",
-            "record": record
+            "record": timestamp
         }
 
     def status(self):
@@ -162,15 +167,16 @@ class RunningProcess(object):
 
         :return:
         """
-        c_exit = self.q.get_record(self.callback_n.exit_name)
+        c_exit = self.q.result.get(self.callback_n.exit_name)
+
         if c_exit:
             return {
                 "ready": True,
                 "record": c_exit,
             }
-        c_enter = self.q.get_record(self.callback_n.enter_name)
-        r_enter = self.q.get_record(self.run_n.enter_name)
-        r_exit = self.q.get_record(self.run_n.exit_name)
+        c_enter = self.q.result.get(self.callback_n.enter_name)
+        r_enter = self.q.result.get(self.run_n.enter_name)
+        r_exit = self.q.result.get(self.run_n.exit_name)
         record = None
         if c_enter and not self.q.record_outdated(c_enter):
             record = c_enter
@@ -180,9 +186,11 @@ class RunningProcess(object):
             record = r_enter
         if record:
             return self.resp_for_busy(record)
+        for key in self.metrics_names:
+            self.q.del_record(key)
         return {
             "ready": True,
-            "message": "No records in prometheus!"
+            "message": "No records in redis!"
         }
 
     @staticmethod

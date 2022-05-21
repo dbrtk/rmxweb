@@ -1,16 +1,11 @@
 
 from hashlib import blake2b
-import re
 import time
 
 from django.db.models import Model
-import requests
 
 from .config import ENTER, EXIT, PROG_PREFIXES
 from .redis import RedisConnect
-from rmxweb.config import (
-    PROMETHEUS_JOB, PROMETHEUS_URL, SECONDS_AFTER_LAST_CALL
-)
 
 
 class Namespace(object):
@@ -113,83 +108,39 @@ class Q(object):
 
         pass
 
-    def prom_query(self):
-        """
-        Builds the query that is sent to prometheus in order to retrieve time
-        series with metrics.
-
-        :return: the prometheus query to be sent to the server
-        :rtype: string
-        """
-        # todo(): delete!
-        for item in self.metrics_names:
-            if not self.validate_metrics_name(item):
-                raise ValueError(f"Wrong metrics name: '{item}'")
-        return '{{__name__=~"{metrics}",job="{job}"}}'.format(
-            metrics="|".join(self.metrics_names),
-            job=PROMETHEUS_JOB
-        )
-
-    @staticmethod
-    def validate_metrics_name(mn):
-        """
-        Validating the metrics name.
-
-        :return: True if the name is valid, otherwise False
-        :rtype: bool
-        """
-        return bool(re.match(r"^[A-Za-z0-9-_]*$", mn))
-
     def get_metrics(self):
+        """
+        Retrieves metrics from redis.
 
-        results = []
+        :return: key value pair with hash names and timestamps
+        :rtype: dict
+        """
+        results = {}
         for key in self.metrics_names:
             value = self.redis.get(key)
             if value:
-                results.append(self.get_timestamp_value(value))
+                results[key] = self.get_timestamp_value(value)
+        return results
 
-    def deppr_get_metrics(self):
+    def del_record(self, key: str):
         """
-        Querying the server that implements prometheus for metrics.
+        Deletes the record from the database.
 
-        :return: a list containing records that match the query
-        :rtype: list
+        :param key:
+        :return:
         """
-        q = self.prom_query()
-        endpoint = f"http://{PROMETHEUS_URL}/query?query={q}"
-        resp = requests.get(endpoint)
-        resp = resp.json()
-        return resp.get("data", {}).get("result", [])
-
-    def get_record(self, name: str = None):
-        """
-        Returns a record for a given metrics name.
-
-        :param name: the name of the metrics
-        :type name: string
-        :return: record
-        :rtype: dict
-        """
-        try:
-            return next(
-                _ for _ in self.result
-                if _.get("metric").get("__name__") == name
-            )
-        except StopIteration:
-            return
+        self.redis.delete(key)
 
     @staticmethod
-    def record_outdated(record):
+    def record_outdated(timestamp: float):
         """
         Checks if the difference between the timestamp in the record and now is
         greater than 15 minutes.
-        The second value in a prom's sample is a timestamp.
 
-        :param record:
+        :param timestamp:
         :return:
         """
         now = time.time()
-        timestamp = record["value"][1]
         if not isinstance(timestamp, float):
             timestamp = float(timestamp)
         if now - timestamp >= 15 * 60:
