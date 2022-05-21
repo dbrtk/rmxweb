@@ -39,32 +39,7 @@ REQUEST_MAX_RETRIES = 5
 # after that the container is set as ready
 SECONDS_AFTER_LAST_CALL = 30
 
-# =========================================>
-
-# RabbitMQ configuration
-# rabbitmq rpc queue name
-# todo(): delete these
-# RPC_QUEUE_NAME = os.environ.get('RPC_QUEUE_NAME', 'rmxweb')
-# RPC_PUBLISH_QUEUES = {
-#     'nlp': 'nlp',
-#     'scrasync': 'scrasync',
-#     'rmxgrep': 'rmxgrep',
-#     'extractxt': 'extractxt'
-# }
-# RabbitMQ login credentials
-
 # =========================================<
-
-
-# configurations for prometheus
-PROMETHEUS_HOST = os.environ.get('PROMETHEUS_HOST')
-PROMETHEUS_PORT = os.environ.get('PROMETHEUS_PORT')
-PROMETHEUS_URL = f'{PROMETHEUS_HOST}:{PROMETHEUS_PORT}/api/v1'
-PROMETHEUS_JOB = 'rmxweb'
-
-PUSHGATEWAY_PORT = os.environ.get('PUSHGATEWAY_PORT')
-PUSHGATEWAY_HOST = os.environ.get('PUSHGATEWAY_HOST')
-
 
 # celery task routes - these are imported in the apps or tasks
 RMXWEB_TASKS = celery_settings.RMXWEB_TASKS

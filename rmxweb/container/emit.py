@@ -1,5 +1,5 @@
 """Emitting miscellaneous messages to the world (other services) through
-   celery/rabbitmq.
+   celery/redis.
 """
 
 from metrics.config import CRAWL_RUN_PREFIX
