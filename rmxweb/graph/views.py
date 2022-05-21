@@ -10,9 +10,9 @@ from .data import get_graph
 from .decorators import graph_request
 from .emit import hierarchical_tree, search_texts
 
-from prom.dataset_ready import DatasetReady
-from prom.dendrogram import DendrogramReady
-from prom.graph import GraphReady
+from metrics.dataset_ready import DatasetReady
+from metrics.dendrogram import DendrogramReady
+from metrics.graph import GraphReady
 from serialisers import SerialiserFactory
 
 

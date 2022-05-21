@@ -3,7 +3,7 @@ from django.http import Http404, HttpResponse
 from rest_framework.views import APIView, Response
 
 from .emit import get_features
-from prom.graph import GraphReady
+from metrics.graph import GraphReady
 from serialisers import SerialiserFactory
 
 

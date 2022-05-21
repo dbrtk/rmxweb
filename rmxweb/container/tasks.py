@@ -4,13 +4,13 @@ from typing import List
 
 from data.models import Data as DataModel
 from .models import Container
-from prom.config import (
+from metrics.config import (
     COMPUTE_MATRIX_RUN_PREFIX,
     CRAWL_CALLBACK_PREFIX,
     INTEGRITY_CHECK_CALLBACK_PREFIX,
     INTEGRITY_CHECK_RUN_PREFIX
 )
-from prom.decorator import register_with_prom
+from metrics.decorator import register_with_prom
 from rmxweb.config import (
     CRAWL_MONITOR_COUNTDOWN,
     NLP_TASKS,

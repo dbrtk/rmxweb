@@ -2,8 +2,8 @@
    celery/rabbitmq.
 """
 
-from prom.config import CRAWL_RUN_PREFIX
-from prom.decorator import register_with_prom
+from metrics.config import CRAWL_RUN_PREFIX
+from metrics.decorator import register_with_prom
 from rmxweb.celery import celery
 from rmxweb.config import (
     CRAWL_START_MONITOR_COUNTDOWN,
@@ -38,7 +38,7 @@ def crawl_async(url_list: list = None, container=None, depth=1):
         }
     ).get()
     # the countdown argument is here to make sure that this task does not
-    # start immediately as prometheus may be empty.
+    # start immediately as the metrics db may be empty.
     celery.send_task(
         RMXWEB_TASKS['monitor_crawl'],
         kwargs={

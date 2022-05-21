@@ -11,10 +11,10 @@ import uuid
 from django.db import models
 
 from .emit import get_available_features, get_features
-from prom.crawl_ready import CrawlReady
-from prom.dataset_ready import DatasetReady
-from prom.graph import GraphReady
-from prom.integrity_check import IntegrityCheckReady
+from metrics.crawl_ready import CrawlReady
+from metrics.dataset_ready import DatasetReady
+from metrics.graph import GraphReady
+from metrics.integrity_check import IntegrityCheckReady
 from rmxweb import config
 
 

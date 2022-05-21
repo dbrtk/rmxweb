@@ -1,9 +1,9 @@
 
-from prom.config import (
+from metrics.config import (
     COMPUTE_DENDROGRAM_CALLBACK_PREFIX,
     COMPUTE_MATRIX_CALLBACK_PREFIX,
 )
-from prom.decorator import register_with_prom
+from metrics.decorator import register_with_prom
 from rmxweb.celery import celery
 
 
@@ -28,5 +28,5 @@ def compute_matrix_callback(
 @celery.task
 @register_with_prom(COMPUTE_DENDROGRAM_CALLBACK_PREFIX)
 def compute_dendrogram_callback(containerid: int = None):
-    """Called when the dendrogram is computed. It needs to be here for prom."""
+    """Called when the dendrogram is computed. It needs to be here for metrics."""
     pass

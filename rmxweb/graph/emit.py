@@ -2,9 +2,9 @@
 import typing
 
 from container.decorators import feats_available
-from prom.config import COMPUTE_DENDROGRAM_RUN_PREFIX
-from prom.decorator import register_with_prom
-from prom.dendrogram import DendrogramReady
+from metrics.config import COMPUTE_DENDROGRAM_RUN_PREFIX
+from metrics.decorator import register_with_prom
+from metrics.dendrogram import DendrogramReady
 from rmxweb.celery import celery
 from rmxweb.config import NLP_TASKS, RMXGREP_TASK
 

@@ -1,8 +1,8 @@
 
 
 from .models import Data as DataModel
-from prom.config import CREATE_DATA_PREFIX
-from prom.decorator import register_with_prom
+from metrics.config import CREATE_DATA_PREFIX
+from metrics.decorator import register_with_prom
 from rmxweb.celery import celery
 
 
