@@ -3,9 +3,8 @@ djangorestframework
 markdown
 django-filter
 
-prometheus_client
-
-celery[redis]
+celery
+redis
 
 requests
 
