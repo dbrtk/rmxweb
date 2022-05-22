@@ -2,8 +2,7 @@
 from redis import ConnectionPool, Redis
 
 from rmxweb.config import (
-    REDIS_METRICS_DB_HOST, REDIS_METRICS_DB_NUMBER, REDIS_METRICS_DB_PASS,
-    REDIS_METRICS_DB_PORT
+    METRICS_HOST_NAME, METRICS_DB_NUMBER, METRICS_PASS, METRICS_PORT
 )
 
 
@@ -20,10 +19,10 @@ class RedisConnect(object):
     def set_connection():
         global CONNECTION
         pool = ConnectionPool(
-            password=REDIS_METRICS_DB_PASS,
-            host=REDIS_METRICS_DB_HOST,
-            port=REDIS_METRICS_DB_PORT,
-            db=REDIS_METRICS_DB_NUMBER,
+            password=METRICS_PASS,
+            host=METRICS_HOST_NAME,
+            port=METRICS_PORT,
+            db=METRICS_DB_NUMBER,
         )
         c = Redis(connection_pool=pool)
         if c.ping():
