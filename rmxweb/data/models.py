@@ -22,6 +22,7 @@ class Data(models.Model):
     updated = models.DateTimeField(auto_now=True)
 
     container = models.ForeignKey(Container, on_delete=models.CASCADE)
+    containerid = models.CharField(max_length=250)
 
     url = models.TextField(validators=[validators.URLValidator()], null=True)
     hostname = models.CharField(max_length=500, null=True)
@@ -79,6 +80,7 @@ class Data(models.Model):
         url_parse = urllib.parse.urlparse(endpoint)
         obj = cls(title=title,
                   container=container_obj,
+                  containerid=containerid,
                   url=endpoint,
                   seed=seed,
                   hostname=url_parse.hostname)
