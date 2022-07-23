@@ -11,7 +11,6 @@ from django.db import models
 from django.core import validators
 from .errors import DuplicateUrlError
 from container.models import Container
-from rmxweb import config
 
 
 class Data(models.Model):
@@ -35,8 +34,7 @@ class Data(models.Model):
     file_path = models.CharField(max_length=500, blank=True, null=True)
     title = models.TextField(blank=True, null=True)
 
-    hash_text = models.CharField(
-        max_length=config.HEXDIGEST_SIZE, blank=True, null=True)
+    hash_text = models.CharField(max_length=128, blank=True, null=True)
 
     # todo(): review the link field.
     # links = UrlListField()
@@ -129,7 +127,7 @@ class Data(models.Model):
         if os.path.isfile(path):
             raise DuplicateUrlError(path)
         self.save()
-        hash = hashlib.blake2b(digest_size=config.DIGEST_SIZE)
+        hash = hashlib.sha512()
 
         with open(path, 'a+') as _file:
             for txt in data:

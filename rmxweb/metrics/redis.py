@@ -12,7 +12,6 @@ CONNECTION = None
 class RedisConnect(object):
 
     def __init__(self):
-
         self.connection = self.get_connection()
 
     @staticmethod
@@ -29,7 +28,7 @@ class RedisConnect(object):
             CONNECTION = c
         else:
             raise RuntimeError(
-                f"Redis database ({REDIS_METRICS_DB_HOST}) not available!"
+                f"Redis database ({METRICS_HOST_NAME}) not available!"
             )
 
     def get_connection(self):

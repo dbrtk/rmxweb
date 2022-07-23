@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'rmxweb.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.environ.get("DATABASE_NAME"),
+        "NAME": str(os.environ.get("DATABASE_NAME")),
     }
 }
 

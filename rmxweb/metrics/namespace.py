@@ -1,5 +1,5 @@
 
-from hashlib import blake2b
+from hashlib import sha256
 import time
 
 from django.db.models import Model
@@ -84,7 +84,7 @@ class Namespace(object):
 
     @staticmethod
     def hash(message: str = None):
-        h = blake2b(digest_size=10)
+        h = sha256()
         h.update(message.encode("utf-8"))
         return h.hexdigest()
 

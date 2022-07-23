@@ -50,6 +50,7 @@ RMXCLUSTER_TASKS = celery_settings.RMXCLUSTER_TASKS
 
 
 # hexdigest size
+# todo(): delete
 DIGEST_SIZE = 64
 HEXDIGEST_SIZE = 128
 
